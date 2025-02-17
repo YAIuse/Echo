@@ -1,0 +1,36 @@
+name: 'Common Setup'
+description: 'Composite action to checkout repository, setup Node.js, install Bun and cache dependencies'
+
+inputs:
+  node-version:
+    description: 'Node.js version to install'
+    required: false
+    default: '22.12'
+  bun-version:
+    description: 'Bun version to install'
+    required: false
+    default: '1.2.2'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js v${{ inputs.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install Bun v${{ inputs.bun-version }}
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: ${{ inputs.bun-version }}
+
+    - name: Cache Bun dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.bun/install/cache
+        key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-bun-
