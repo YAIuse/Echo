@@ -1,0 +1,16 @@
+.git
+node_modules
+coverage
+src
+tests
+.gitignore
+.prettierrc
+bun.lock
+bun.lockb
+tsconfig.json
+tsconfig.build.json
+dist/*.js
+dist/*.map
+!dist/index.cjs.js
+!dist/index.esm.js
+!dist/*.d.ts
