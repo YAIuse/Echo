@@ -1,0 +1,24 @@
+{
+	"name": "@yai-team/echo",
+	"version": "0.1.0",
+	"scripts": {},
+	"license": "MIT",
+	"author": {
+		"name": "YAI team",
+		"email": "help.yai.team@gmail.com",
+		"url": "https://github.com/YAI-team"
+	},
+	"description": "Echo is a lightweight HTTP client built on the native fetch API, providing an Axios-like experience with support for request and response interceptors. It simplifies network requests by adding headers, handling errors, logging requests, and managing other networking aspects with ease.",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/YAI-team/Echo"
+	},
+	"keywords": [
+		"http",
+		"https",
+		"fetch",
+		"node",
+		"network",
+		"request"
+	]
+}
