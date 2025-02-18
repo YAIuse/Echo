@@ -36,21 +36,16 @@ export class EchoClient {
 	}
 
 	private returnResponseData = async (req: EchoRequest, res: Response) => {
-		if (!req.responseType || !res.ok || req.responseType === 'original') {
+		if (!res.ok || !req.responseType) {
 			const contentType = res.headers?.get('Content-Type') || ''
 
-			if (!req.responseType || req.responseType === 'original') {
-				if (contentType.includes('application/json')) {
-					return res.json().catch(() => null)
-				}
-				if (contentType.startsWith('text/')) {
-					return res.text().catch(() => null)
-				}
-				if (contentType.includes('application/octet-stream')) {
-					return res.arrayBuffer().catch(() => null)
-				}
+			if (contentType.includes('application/json')) {
 				return res.json().catch(() => null)
 			}
+			if (contentType.includes('text/plain')) {
+				return res.text().catch(() => null)
+			}
+			return res.json().catch(() => null)
 		} else {
 			switch (req.responseType) {
 				case 'json':
@@ -67,6 +62,8 @@ export class EchoClient {
 					return res.formData()
 				case 'stream':
 					return res.body
+				case 'original':
+					return res
 				default:
 					throw new Error(`Unsupported responseType: ${req.responseType}`)
 			}
