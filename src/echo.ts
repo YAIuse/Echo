@@ -70,8 +70,8 @@ export class Echo extends EchoClient {
 				return await runRejected('request', error)
 			})
 
-			const { request, config } = this.configurator(interceptedRequest)
-			const response = await this.fetch<T>(config, request).catch(
+			const { request } = this.configurator(interceptedRequest)
+			const response = await this.fetch<T>(configure, request).catch(
 				async error => {
 					if (!isEchoError(error)) return await runRejected('request', error)
 					return await runRejected('response', error)

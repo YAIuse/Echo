@@ -32,7 +32,7 @@ export class EchoClient {
 			delete request.headers?.['Content-Type']
 		}
 
-		return { request, config }
+		return { request }
 	}
 
 	private returnResponseData = async (req: EchoRequest, res: Response) => {
@@ -120,17 +120,17 @@ export class EchoClient {
 	})
 
 	request = async <T>(configure: EchoConfig): Promise<EchoResponse<T>> => {
-		const { request, config } = this.configurator(
+		const { request } = this.configurator(
 			deepMerge(this.createConfig, configure)
 		)
 
 		try {
-			return await this.fetch<T>(config, request)
+			return await this.fetch<T>(configure, request)
 		} catch (err: any) {
 			if (isEchoError(err)) throw err
 
 			const errorMessage = err.message || 'Unexpected error'
-			throw new EchoError(errorMessage, config, request)
+			throw new EchoError(errorMessage, configure, request)
 		}
 	}
 	get = this.methods(this.request).get
