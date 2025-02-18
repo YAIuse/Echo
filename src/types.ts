@@ -69,3 +69,15 @@ export type EchoResponse<T = any> = {
 	config: EchoConfig
 	request: EchoRequest
 }
+
+// ----Interceptors
+
+type Interceptor<T> = {
+	onFulfilled?: null | ((value: T) => T | Promise<T>)
+	onRejected?: null | ((error: any) => any)
+}
+
+type InterceptorMap<T> = Map<string, Interceptor<T>>
+
+export type EchoRequestInterceptors = InterceptorMap<EchoConfig>
+export type EchoResponseInterceptors = InterceptorMap<EchoResponse>
