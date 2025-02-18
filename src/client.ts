@@ -1,5 +1,5 @@
 import { EchoError, isEchoError } from './error'
-import {
+import type {
 	EchoConfig,
 	EchoCreateConfig,
 	EchoRequest,

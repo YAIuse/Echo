@@ -1,4 +1,4 @@
-import { EchoSearchParams } from 'src/types'
+import type { EchoSearchParams } from 'src/types'
 
 export const buildQueryParams = (params?: EchoSearchParams) => {
 	if (!params) return ''

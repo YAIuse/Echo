@@ -1,5 +1,5 @@
 import { EchoError, isEchoError } from 'src/error'
-import { EchoConfig, EchoRequest, EchoResponse } from 'src/types'
+import type { EchoConfig, EchoRequest, EchoResponse } from 'src/types'
 
 const mockConfig: EchoConfig = {
 	method: 'GET',

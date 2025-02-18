@@ -1,4 +1,4 @@
-import { EchoConfig, EchoRequest, EchoResponse } from './types'
+import type { EchoConfig, EchoRequest, EchoResponse } from './types'
 
 export function isEchoError(error: any): error is EchoError {
 	return (
