@@ -11,7 +11,9 @@ bun.lockb
 tsconfig.json
 tsconfig.build.json
 dist/*.js
+dist/**/*.js
 dist/*.map
+dist/**/*.map
 !dist/index.cjs.js
 !dist/index.esm.js
 !dist/*.d.ts
