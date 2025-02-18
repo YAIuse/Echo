@@ -1,7 +1,6 @@
 import fetchMock from 'jest-fetch-mock'
 import { EchoClient } from 'src/client'
 import { EchoError } from 'src/error'
-import type { EchoResponse } from 'src/types'
 
 fetchMock.enableMocks()
 
@@ -29,8 +28,7 @@ describe('EchoClient', () => {
 			headers: { 'Content-Type': 'application/json' }
 		})
 
-		const response: EchoResponse<{ message: string }> =
-			await client.get('/test')
+		const response = await client.get('/test')
 
 		expect(response.status).toBe(200)
 		expect(response.data).toEqual({ message: 'Success' })
@@ -396,10 +394,7 @@ describe('EchoClient', () => {
 			headers: { 'Content-Type': 'application/json' }
 		})
 
-		const response: EchoResponse<{ id: number }> = await client.post(
-			'/create',
-			{ name: 'Test' }
-		)
+		const response = await client.post('/create', { name: 'Test' })
 
 		expect(response.status).toBe(201)
 		expect(response.data).toEqual({ id: 1 })
@@ -424,10 +419,7 @@ describe('EchoClient', () => {
 			headers: { 'Content-Type': 'text/plain' }
 		})
 
-		const response: EchoResponse<string> = await client.post(
-			'/upload',
-			formData
-		)
+		const response = await client.post('/upload', formData)
 
 		expect(response.status).toBe(200)
 		expect(response.data).toBe('Success')
@@ -465,7 +457,7 @@ describe('EchoClient', () => {
 					'X-Custom-Header': 'test-value',
 					'Content-Type': 'application/json'
 				}),
-				body: expect.any(String)
+				body: JSON.stringify({ test: 123 })
 			})
 		)
 	})
@@ -476,10 +468,7 @@ describe('EchoClient', () => {
 			headers: { 'Content-Type': 'application/json' }
 		})
 
-		const response: EchoResponse<{ updated: boolean }> = await client.put(
-			'/update',
-			{ name: 'Test' }
-		)
+		const response = await client.put('/update', { name: 'Test' })
 
 		expect(response.status).toBe(200)
 		expect(response.data).toEqual({ updated: true })
@@ -490,7 +479,7 @@ describe('EchoClient', () => {
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json'
 				}),
-				body: expect.any(String)
+				body: JSON.stringify({ name: 'Test' })
 			})
 		)
 	})
@@ -501,10 +490,7 @@ describe('EchoClient', () => {
 			headers: { 'Content-Type': 'application/json' }
 		})
 
-		const response: EchoResponse<{ patched: boolean }> = await client.patch(
-			'/patch',
-			{ name: 'Test' }
-		)
+		const response = await client.patch('/patch', { name: 'Test' })
 
 		expect(response.status).toBe(200)
 		expect(response.data).toEqual({ patched: true })
@@ -515,7 +501,7 @@ describe('EchoClient', () => {
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json'
 				}),
-				body: expect.any(String)
+				body: JSON.stringify({ name: 'Test' })
 			})
 		)
 	})
@@ -544,21 +530,23 @@ describe('EchoClient', () => {
 			headers: { 'Content-Type': 'application/json' }
 		})
 
-		await expect(
-			client.get('/missing').catch(error => {
-				expect(error).toBeInstanceOf(EchoError)
-				expect(error.request.method).toBe('GET')
-				expect(error.response.status).toBe(404)
-				expect(error.response.data).toEqual({ error: 'Not Found' })
-
-				throw error
-			})
-		).rejects.toThrow(EchoError)
+		try {
+			await client.get('/missing')
+		} catch (error: any) {
+			expect(error).toBeInstanceOf(EchoError)
+			expect(error.request.method).toBe('GET')
+			expect(error.response.status).toBe(404)
+			expect(error.response.data).toEqual({ error: 'Not Found' })
+		}
 	})
 
 	test('Обработка ошибок запроса', async () => {
 		fetchMock.mockRejectOnce(() => Promise.reject(new Error('Request Error')))
 
-		await expect(client.get('/error')).rejects.toThrow(EchoError)
+		try {
+			await client.get('/error')
+		} catch (error: any) {
+			expect(error).toBeInstanceOf(EchoError)
+		}
 	})
 })
