@@ -22,7 +22,8 @@
 		"typescript": "^5.7.3"
 	},
 	"jest": {
-		"preset": "ts-jest",
+		"preset": "ts-jest/presets/default-esm",
+		"testEnvironment": "node",
 		"moduleFileExtensions": [
 			"ts",
 			"js"
@@ -30,10 +31,21 @@
 		"testMatch": [
 			"**/?(*.)+(spec|test).ts"
 		],
-		"testEnvironment": "node",
+		"transform": {
+			"^.+\\.ts$": [
+				"ts-jest",
+				{
+					"useESM": true,
+					"isolatedModules": true
+				}
+			]
+		},
 		"moduleNameMapper": {
 			"^src/(.*)$": "<rootDir>/src/$1"
-		}
+		},
+		"extensionsToTreatAsEsm": [
+			".ts"
+		]
 	},
 	"license": "MIT",
 	"author": {
