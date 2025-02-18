@@ -47,7 +47,7 @@ describe('EchoClient', () => {
 	})
 
 	test('GET запрос с query params', async () => {
-		fetchMock.mockResponseOnce(JSON.stringify({ result: 'OK' }), {
+		fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
 			status: 200,
 			headers: { 'Content-Type': 'application/json' }
 		})
@@ -57,7 +57,7 @@ describe('EchoClient', () => {
 		})
 
 		expect(response.status).toBe(200)
-		expect(response.data).toEqual({ result: 'OK' })
+		expect(response.data).toEqual({ message: 'Success' })
 		expect(fetchMock).toHaveBeenCalledWith(
 			'https://api.example.com/api/search?q=test',
 			expect.objectContaining({
@@ -159,18 +159,41 @@ describe('EchoClient', () => {
 		)
 	})
 
+	test('GET запрос c responseType -> json', async () => {
+		fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
+			status: 200,
+			headers: { 'Content-Type': 'application/json' }
+		})
+
+		const response = await client.get('/json', {
+			responseType: 'json'
+		})
+
+		expect(response.status).toBe(200)
+		expect(response.data).toEqual({ message: 'Success' })
+		expect(fetchMock).toHaveBeenCalledWith(
+			'https://api.example.com/api/json',
+			expect.objectContaining({
+				method: 'GET',
+				headers: expect.objectContaining({
+					'Content-Type': 'application/json'
+				})
+			})
+		)
+	})
+
 	test('GET запрос c responseType -> text', async () => {
-		fetchMock.mockResponseOnce('Plain text response', {
+		fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
 			status: 200,
 			headers: { 'Content-Type': 'text/plain' }
 		})
 
-		const response: EchoResponse<string> = await client.get('/text', {
+		const response = await client.get('/text', {
 			responseType: 'text'
 		})
 
 		expect(response.status).toBe(200)
-		expect(response.data).toBe('Plain text response')
+		expect(response.data).toBe(JSON.stringify({ message: 'Success' }))
 		expect(fetchMock).toHaveBeenCalledWith(
 			'https://api.example.com/api/text',
 			expect.objectContaining({
@@ -182,7 +205,7 @@ describe('EchoClient', () => {
 		)
 	})
 
-	test('GET запрос responseType -> arrayBuffer', async () => {
+	test('GET запрос c responseType -> arrayBuffer', async () => {
 		const buffer = new Uint8Array([1, 2, 3, 4]).buffer
 
 		fetchMock.mockImplementationOnce(() =>
@@ -211,7 +234,7 @@ describe('EchoClient', () => {
 		)
 	})
 
-	test('GET запрос responseType -> blob', async () => {
+	test('GET запрос c responseType -> blob', async () => {
 		const blob = new Blob(['hello'], { type: 'text/plain' })
 
 		fetchMock.mockImplementationOnce(() =>
@@ -229,6 +252,135 @@ describe('EchoClient', () => {
 		expect(response.data?.constructor.name).toBe('Blob')
 		expect(fetchMock).toHaveBeenCalledWith(
 			'https://api.example.com/api/blob',
+			expect.objectContaining({
+				method: 'GET',
+				headers: expect.objectContaining({
+					'Content-Type': 'application/json'
+				})
+			})
+		)
+	})
+
+	test('GET запрос с responseType -> stream', async () => {
+		const buffer = Buffer.from('Hello, world!')
+
+		fetchMock.mockImplementationOnce(() =>
+			Promise.resolve(
+				new Response(buffer, {
+					status: 200,
+					headers: { 'Content-Type': 'application/octet-stream' }
+				})
+			)
+		)
+
+		const response = await client.get('/stream', { responseType: 'stream' })
+
+		expect(response.status).toBe(200)
+		expect(response.data).toBeInstanceOf(Buffer)
+		expect(fetchMock).toHaveBeenCalledWith(
+			'https://api.example.com/api/stream',
+			expect.objectContaining({
+				method: 'GET',
+				headers: expect.objectContaining({
+					'Content-Type': 'application/json'
+				})
+			})
+		)
+	})
+
+	test('GET запрос с responseType -> original', async () => {
+		const originalResponse = new Response('Some content', {
+			status: 200,
+			headers: { 'Content-Type': 'text/plain' }
+		})
+
+		fetchMock.mockImplementationOnce(() => Promise.resolve(originalResponse))
+
+		const response = await client.get('/original', {
+			responseType: 'original'
+		})
+
+		expect(response.status).toBe(200)
+		expect(response.data).toBeInstanceOf(Response)
+		expect(fetchMock).toHaveBeenCalledWith(
+			'https://api.example.com/api/original',
+			expect.objectContaining({
+				method: 'GET',
+				headers: expect.objectContaining({
+					'Content-Type': 'application/json'
+				})
+			})
+		)
+	})
+
+	test('GET запрос с responseType -> unknown', async () => {
+		fetchMock.mockResponseOnce('', {
+			status: 200,
+			headers: { 'Content-Type': 'application/json' }
+		})
+
+		try {
+			await client.get('/unknown', { responseType: 'unknown' as any })
+		} catch (error: any) {
+			expect(error).toBeInstanceOf(Error)
+			expect(error.message).toBe('Unsupported responseType: unknown')
+		}
+	})
+
+	test('GET запрос без responseType -> json', async () => {
+		fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
+			status: 200,
+			headers: { 'Content-Type': 'application/json' }
+		})
+
+		const response = await client.get('/json')
+
+		expect(response.status).toBe(200)
+		expect(response.data).toEqual({ message: 'Success' })
+		expect(fetchMock).toHaveBeenCalledWith(
+			'https://api.example.com/api/json',
+			expect.objectContaining({
+				method: 'GET',
+				headers: expect.objectContaining({
+					'Content-Type': 'application/json'
+				})
+			})
+		)
+	})
+
+	test('GET запрос без responseType -> text', async () => {
+		fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
+			status: 200,
+			headers: { 'Content-Type': 'text/plain' }
+		})
+
+		const response = await client.get('/text')
+
+		expect(response.status).toBe(200)
+		expect(response.data).toBe(JSON.stringify({ message: 'Success' }))
+		expect(fetchMock).toHaveBeenCalledWith(
+			'https://api.example.com/api/text',
+			expect.objectContaining({
+				method: 'GET',
+				headers: expect.objectContaining({
+					'Content-Type': 'application/json'
+				})
+			})
+		)
+	})
+
+	test('GET запрос без responseType -> unknown', async () => {
+		fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
+			status: 200,
+			headers: { 'Content-Type': 'unknown' }
+		})
+
+		const response = await client.get('/unknown')
+
+		expect(response.status).toBe(200)
+		expect(response.data).toEqual({ message: 'Success' })
+		expect(fetchMock).toHaveBeenCalledWith(
+			'https://api.example.com/api/unknown',
 			expect.objectContaining({
 				method: 'GET',
 				headers: expect.objectContaining({
@@ -274,8 +426,7 @@ describe('EchoClient', () => {
 
 		const response: EchoResponse<string> = await client.post(
 			'/upload',
-			formData,
-			{ headers: { 'Content-Type': 'application/json' } }
+			formData
 		)
 
 		expect(response.status).toBe(200)
