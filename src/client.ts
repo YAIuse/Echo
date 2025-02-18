@@ -122,13 +122,13 @@ export class EchoClient {
 		}
 	})
 
-	request = <T>(configure: EchoConfig): Promise<EchoResponse<T>> => {
+	request = async <T>(configure: EchoConfig): Promise<EchoResponse<T>> => {
 		const { request, config } = this.configurator(
 			deepMerge(this.createConfig, configure)
 		)
 
 		try {
-			return this.fetch<T>(config, request)
+			return await this.fetch<T>(config, request)
 		} catch (err: any) {
 			if (isEchoError(err)) throw err
 
