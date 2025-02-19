@@ -3,10 +3,9 @@ description: Report a reproducible bug.
 labels: ['bug', 'invalid']
 body:
   - type: markdown
-    attributes:
-      value: |
-        ## 📌 Пожалуйста, начните заголовок с `[bug]`
-        Например: `[bug] Ошибка при загрузке данных`
+    value: |
+      > 📌 **Note:** Please start the title with `[bug]`.  
+      > For example: `[bug] Error while loading data`
 
   - type: markdown
     attributes:
