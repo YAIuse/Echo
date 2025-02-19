@@ -12,6 +12,7 @@
 [![npm Package](https://img.shields.io/npm/v/@yai-team/echo?color=blue&logo=npm)](https://www.npmjs.com/package/@yai-team/echo)
 [![npm Downloads](https://img.shields.io/npm/dw/@yai-team/echo?color=green&logo=npm)](https://www.npmjs.com/package/@yai-team/echo)
 [![Install Size](https://img.shields.io/badge/dynamic/json?url=https://packagephobia.com/v2/api.json?p=@yai-team/echo&query=$.install.pretty&label=install%20size&style=flat-square)](https://packagephobia.com/result?p=@yai-team/echo)
+[![Coverage Status](https://codecov.io/gh/ТВОЙ_РЕПО/branch/main/graph/badge.svg)](https://codecov.io/gh/ТВОЙ_РЕПО)
 [![Bundle Size](https://img.shields.io/bundlephobia/minzip/@yai-team/echo?color=purple&logo=webpack)](https://bundlephobia.com/package/@yai-team/echo@latest)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/YAI-team/Echo/tests.yaml?branch=main&logo=githubactions)](https://github.com/YAI-team/Echo/actions)
 [![Snyk Security](https://snyk.io/test/npm/@yai-team/echo/badge.svg)](https://snyk.io/test/npm/@yai-team/echo)
