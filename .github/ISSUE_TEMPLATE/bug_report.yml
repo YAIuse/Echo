@@ -1,0 +1,102 @@
+name: '🐛 Bug Report'
+description: Report a reproducible bug.
+labels: ['bug', 'invalid']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 📌 Пожалуйста, начните заголовок с `[bug]`
+        Например: `[bug] Ошибка при загрузке данных`
+
+  - type: markdown
+    attributes:
+      value: 'Please read and follow the instructions before submitting an issue:'
+
+  - type: markdown
+    attributes:
+      value: |
+        - Read all our documentation, especially the [README](./README.md). It may contain information that helps you solve your issue.
+        - Ensure your issue isn't already [reported](https://github.com/YAI-team/Echo/issues?utf8=%E2%9C%93&q=is%3Aissue).
+        - If you aren't sure that the issue is caused by Echo or you just need help, please use [Stack Overflow](https://stackoverflow.com/questions) or [our discussions](https://github.com/YAI-team/Echo/discussions).
+        - Ensure it isn't already fixed in the latest Echo version.
+
+  - type: markdown
+    attributes:
+      value: '⚠️👆 Feel free to these instructions before submitting the issue 👆⚠️'
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 'Describe the bug'
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 'To Reproduce'
+      description: |
+        Code snippet to reproduce. **If your problem is not reproducible, please file under Support or Usage Question**
+    validations:
+      required: false
+
+  - type: textarea
+    id: code-snippet
+    attributes:
+      label: 'Code snippet'
+      render: js
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 'Expected behavior'
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: Environment
+
+  - type: input
+    id: echo-version
+    attributes:
+      label: 'Echo Version'
+      placeholder: 'e.g. 0.2.0'
+
+  - type: input
+    id: browser
+    attributes:
+      label: 'Browser'
+      placeholder: 'e.g. Chrome, Yandex'
+
+  - type: input
+    id: browser-version
+    attributes:
+      label: 'Browser Version'
+      placeholder: 'e.g. 42'
+
+  - type: input
+    id: node-version
+    attributes:
+      label: 'Node.js Version'
+      description: 'node --version'
+      placeholder: 'e.g. 22.14.0'
+
+  - type: input
+    id: os
+    attributes:
+      label: 'OS'
+      placeholder: 'e.g. Windows 10, iOS 16.0.2'
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 'Additional context/Screenshots'
+      description: Add any other context about the problem here. If applicable, add screenshots to help explain.
+      render: bash
+    validations:
+      required: false
