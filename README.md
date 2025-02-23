@@ -14,7 +14,7 @@
 [![Install Size](https://img.shields.io/badge/dynamic/json?url=https://packagephobia.com/v2/api.json?p=@yai-team/echo&query=$.install.pretty&label=install%20size&style=flat-square)](https://packagephobia.com/result?p=@yai-team/echo)
 [![Bundle Size](https://img.shields.io/bundlephobia/minzip/@yai-team/echo?color=purple&logo=webpack)](https://bundlephobia.com/package/@yai-team/echo@latest)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/YAI-team/Echo/tests.yaml?branch=main&logo=githubactions)](https://github.com/YAI-team/Echo/actions)
-[![Coverage Status](https://codecov.io/gh/YAI-team/Echo/branch/main/graph/badge.svg)](https://codecov.io/gh/YAI-team/Echo)
+[![Coverage Status](https://codecov.io/gh/YAI-team/Echo/branch/main/graph/badge.svg)](https://app.codecov.io/gh/YAI-team/Echo)
 [![Snyk Security](https://snyk.io/test/npm/@yai-team/echo/badge.svg)](https://snyk.io/test/npm/@yai-team/echo)
 [![License](https://img.shields.io/github/license/YAI-team/Echo?color=green)](https://github.com/YAI-team/Echo/blob/main/LICENSE)
 
@@ -26,7 +26,7 @@
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Request Methods](#request-methods)
-- [Creating an Instance](#creating-an-instance-and-base-configuration)
+- [Creating an Instance](#creating-an-instance)
 - [Request Config](#request-config)
 - [Response Schema](#response-schema)
 - [Interceptors](#interceptors)
@@ -45,11 +45,11 @@ This is a lightweight HTTP client based on the built-in `fetch`, featuring a con
 
 ```bash
 # using npm
-$ npm install @yai/echo
+$ npm install @yai-team/echo
 # or using yarn
-$ yarn add @yai/echo
+$ yarn add @yai-team/echo
 # or using bun
-$ bun add @yai/echo
+$ bun add @yai-team/echo
 ```
 
 ## Quick Start
@@ -59,11 +59,11 @@ After installation, you can use an instance created via create to benefit from i
 > **Note:** Only instances created via `echo.create(config)` support interceptors. The default `echo` instance (created without `create`) does not support interceptors.
 
 ```javascript
-import echo from '@yai/echo'
+import echo from '@yai-team/echo'
 
 // Create an instance with base configuration and interceptors support
 const echoBase = echo.create({
-	baseURL: 'https://api.example.com/api',
+	baseURL: 'http://localhost:4200/api',
 	headers: { 'Content-Type': 'application/json' }
 })
 
@@ -71,7 +71,7 @@ const echoBase = echo.create({
 echoBase
 	.get('/users')
 	.then(response => {
-		console.log(response.data)
+		console.log(response)
 	})
 	.catch(error => {
 		console.log(error)
@@ -97,20 +97,20 @@ The instance (or the default `echo`) supports the following methods:
 
 Where:
 
-- `url` — A string indicating the endpoint (if `baseURL` is set, it will be prepended).
+- `url` — A string indicating the endpoint. If `baseURL` is set, it will be prepended unless `url` is an absolute path (e.g., starting with `http://` or `https://`, in which case `baseURL` will be ignored).
 - `body` — The request body for methods that allow sending data (`POST`, `PUT`, `PATCH`).
 - `options` — Additional configuration (`headers`, `responseType`, `params`, etc.).
 
-## Creating an Instance and Base Configuration
+## Creating an Instance
 
 Example of creating an instance:
 
 ```javascript
-import echo from '@yai/echo'
+import echo from '@yai-team/echo'
 
 // Define configuration
 const config: EchoCreateConfig = {
-    baseURL: 'http://localhost:4200',
+    baseURL: 'http://localhost:4200/api',
     headers: {
         'Content-Type': 'application/json'
     },
@@ -159,7 +159,7 @@ These are the available configuration parameters for making requests:
     url: '/user',
 
     // HTTP method (GET, POST, etc.)
-    method: 'get',
+    method: 'GET',
 
     // Request headers
     headers: { 'Content-Type': 'application/json' },
@@ -172,6 +172,12 @@ These are the available configuration parameters for making requests:
 
     // Other fields supported by fetch.
 }
+```
+
+Example:
+
+```javascript
+echoBase.get('/users', { params: { limit: 10 } })
 ```
 
 ## Response Schema
@@ -203,7 +209,7 @@ A response object contains:
 Example:
 
 ```javascript
-echoBase.get('/users').then(response => {
+echo.get('/users').then(response => {
 	console.log(response.data)
 	console.log(response.status)
 	console.log(response.statusText)
@@ -215,7 +221,7 @@ echoBase.get('/users').then(response => {
 
 ## Interceptors
 
-Interceptors let you intercept and modify requests or responses (and even errors) before they are handled by your application. They are available on instances created via `echo.create(config)` and come in two types:
+Interceptors let you intercept and modify requests or responses (and even errors) before they are handled by your application. They are available on instances created via `echo.create(config)` and can be asynchronous:
 
 ## Request Interceptors
 
@@ -230,29 +236,6 @@ Interceptors let you intercept and modify requests or responses (and even errors
 - If an error occurs during the request process, the `onRejected` handlers for requests are invoked in order until one recovers the error.
 - These handlers catch only errors related to the request setup.
   If none recover, the error is propagated.
-
-### Example:
-
-```javascript
-const echoAuth = echo.create({ baseURL: 'https://api.example.com/api' })
-
-// Add a request interceptor to inject an Authorization header
-echoAuth.interceptors.request.use(
-	'auth',
-	config => {
-		// Append Authorization header without overwriting other headers:
-		config.headers = {
-			...config.headers,
-			Authorization: 'Bearer myToken'
-		}
-		return config
-	},
-	error => {
-		// Optionally handle errors during config preparation
-		return error
-	}
-)
-```
 
 ## Response Interceptors
 
@@ -271,16 +254,63 @@ echoAuth.interceptors.request.use(
 ### Example:
 
 ```javascript
-// Add a response interceptor to modify the response data
-echoAuth.interceptors.response.use(
-	'modifyResponse',
-	response => {
-		// Example: add a new property to the response data
-		response.data = { modified: true, ...response.data }
-		return response
+const echoAuth = echo.create(config)
+
+echoAuth.interceptors.request.use(
+	'auth',
+	// Optionally, you can pass null
+	config => {
+		// Example of Append Authorization header without overwriting other headers:
+		config.headers = {
+			...config.headers,
+			Authorization: 'Bearer myToken'
+		}
+		return config
 	},
 	error => {
-		// Optionally handle errors during response processing
+		// Optionally handle errors during config preparation
+		return error
+	}
+)
+
+echoAuth.interceptors.response.use(
+	'auth',
+	// Optionally, you can pass null
+	response => {
+		// Optionally modify response
+		return response
+	},
+	async error => {
+		// Example of response error handling
+		if (isEchoError(error)) {
+			const originalConfig: EchoConfig & { _isRetry?: boolean } = error.config
+
+			// Check valid request
+			const validRequest =
+				error.response?.status === 401 &&
+				(error.message === 'jwt expired' ||
+					error.message === 'jwt must be provided')
+
+			if (!originalConfig._isRetry && validRequest) {
+				originalConfig._isRetry = true
+
+				try {
+					// Get new tokens
+					await tokenService.getNewTokens()
+
+					// Retry request
+					return await echoAuth.request(originalConfig)
+				} catch (err) {
+					if (validRequest) {
+						// Remove tokens if they are invalid
+						removeAccessToken()
+					}
+					throw err
+				}
+			}
+		}
+
+		// Return error if it is not handled
 		return error
 	}
 )
