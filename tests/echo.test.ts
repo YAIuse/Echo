@@ -1,6 +1,6 @@
 import fetchMock from 'jest-fetch-mock'
 import { Echo, type EchoInstance } from 'src/echo'
-import { EchoError } from 'src/error'
+import { EchoError, isEchoError } from 'src/error'
 import type { EchoConfig } from 'src/types'
 
 type EchoFullInstance = Omit<Echo, 'createConfig'>
@@ -8,15 +8,13 @@ type EchoFullInstance = Omit<Echo, 'createConfig'>
 fetchMock.enableMocks()
 
 describe('Echo', () => {
-	let echoFull: EchoFullInstance
 	let echo: EchoInstance
 
 	beforeEach(() => {
-		;(echoFull = new Echo()),
-			(echo = new Echo().create({
-				baseURL: 'https://api.example.com/api',
-				headers: { 'Content-Type': 'application/json' }
-			}))
+		echo = new Echo().create({
+			baseURL: 'https://api.example.com/api',
+			headers: { 'Content-Type': 'application/json' }
+		})
 	})
 
 	afterEach(() => {
@@ -28,12 +26,14 @@ describe('Echo', () => {
 	})
 
 	test('Создание экземпляра echo', () => {
-		expect(echoFull).toBeDefined()
+		const echoFull = new Echo()
+
 		const echoInstance = echoFull.create({
 			baseURL: 'https://api.example.com/api',
 			headers: { 'Content-Type': 'application/json' }
 		})
 
+		expect(echoFull).toBeDefined()
 		expect(echoInstance).toBeDefined()
 		expect(echoInstance).not.toBe(echoFull)
 	})
@@ -775,6 +775,93 @@ describe('Echo', () => {
 			)
 			expect(spy1).not.toHaveBeenCalled()
 			expect(spy2).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('All interceptors', () => {
+		test('Перехват ошибки запроса с перезапросом', async () => {
+			const errorConfig: EchoConfig = { method: 'GET', url: '/get' }
+
+			echo.interceptors.request.use('auth', config => {
+				if (config.headers?.Authorization !== 'Bearer new_token') {
+					config.headers = {
+						...config.headers,
+						Authorization: 'Bearer old_token'
+					}
+				}
+
+				return config
+			})
+
+			echo.interceptors.response.use('auth', null, async error => {
+				if (isEchoError(error)) {
+					const originalConfig: any = error.config
+					const validRequest =
+						error.response?.status === 401 &&
+						(error.message === 'jwt expired' ||
+							error.message === 'jwt must be provided')
+
+					if (!originalConfig._isRetry && validRequest) {
+						originalConfig._isRetry = true
+
+						try {
+							// Get new tokens
+							originalConfig.headers = {
+								...originalConfig.headers,
+								Authorization: 'Bearer new_token'
+							}
+							// Retry request
+							return await echo.request(originalConfig)
+						} catch (err) {
+							throw err
+						}
+					}
+				}
+
+				return error
+			})
+
+			fetchMock.mockRejectOnce(() =>
+				Promise.reject(
+					new EchoError('jwt expired', errorConfig, errorConfig, {
+						status: 401,
+						statusText: 'jwt expired',
+						data: null,
+						headers: {},
+						config: errorConfig,
+						request: errorConfig
+					})
+				)
+			)
+
+			fetchMock.mockResponseOnce(JSON.stringify({ success: true }), {
+				status: 200,
+				headers: { 'Content-Type': 'application/json' }
+			})
+
+			const response = await echo.get('/get')
+
+			expect(response.status).toBe(200)
+			expect(response.data).toEqual({ success: true })
+
+			expect(fetchMock).toHaveBeenCalledTimes(2)
+
+			expect(fetchMock.mock.calls[0][0]).toBe('https://api.example.com/api/get')
+			expect(fetchMock.mock.calls[0][1]).toMatchObject({
+				method: 'GET',
+				headers: expect.objectContaining({
+					Authorization: 'Bearer old_token'
+				})
+			})
+
+			expect(fetchMock.mock.calls[1][0]).toBe('https://api.example.com/api/get')
+			expect(fetchMock.mock.calls[1][1]).toMatchObject({
+				method: 'GET',
+				headers: expect.objectContaining({
+					Authorization: 'Bearer new_token',
+					'Content-Type': 'application/json'
+				})
+			})
 		})
 	})
 })
