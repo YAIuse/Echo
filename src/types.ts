@@ -1,4 +1,4 @@
-export type ValueOf<T> = T[keyof T]
+type ValueOf<T> = T[keyof T]
 
 // ----Enum
 
