@@ -10,7 +10,7 @@
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-blue?logo=github)](https://github.com/YAI-team/Echo)
 [![npm Package](https://img.shields.io/npm/v/@yai-team/echo?color=blue&logo=npm)](https://www.npmjs.com/package/@yai-team/echo)
-[![npm Downloads](https://img.shields.io/npm/dw/@yai-team/echo?color=green&logo=npm)](https://www.npmjs.com/package/@yai-team/echo)
+[![npm Downloads](https://img.shields.io/npm/dm/@yai-team/echo?color=green&logo=npm)](https://www.npmjs.com/package/@yai-team/echo)
 [![Install Size](https://img.shields.io/badge/dynamic/json?url=https://packagephobia.com/v2/api.json?p=@yai-team/echo&query=$.install.pretty&label=install%20size&style=flat-square)](https://packagephobia.com/result?p=@yai-team/echo)
 [![Bundle Size](https://img.shields.io/bundlephobia/minzip/@yai-team/echo?color=purple&logo=webpack)](https://bundlephobia.com/package/@yai-team/echo@latest)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/YAI-team/Echo/tests.yaml?branch=main&logo=githubactions)](https://github.com/YAI-team/Echo/actions)
