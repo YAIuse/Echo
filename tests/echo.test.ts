@@ -3,8 +3,6 @@ import { Echo, type EchoInstance } from 'src/echo'
 import { EchoError, isEchoError } from 'src/error'
 import type { EchoConfig } from 'src/types'
 
-type EchoFullInstance = Omit<Echo, 'createConfig'>
-
 fetchMock.enableMocks()
 
 describe('Echo', () => {
@@ -292,7 +290,7 @@ describe('Echo', () => {
 			expect(spy).toHaveBeenCalled()
 		})
 
-		test('Несколько перехватчиков reject -> прекращение цепочки после первого восстановления', async () => {
+		test('Несколько перехватчиков reject -> не прекращаем цепочку после первого восстановления', async () => {
 			const spy1 = jest.fn(error => {
 				return error
 			})
@@ -300,7 +298,7 @@ describe('Echo', () => {
 				return { data: 'Recovered from second interceptor', status: 200 }
 			})
 			const spy3 = jest.fn(() => {
-				return { data: 'Should not reach here', status: 200 }
+				return { data: 'Should reach here', status: 200 }
 			})
 
 			echo.interceptors.request.use('1', null, spy1)
@@ -312,7 +310,7 @@ describe('Echo', () => {
 			const response = await echo.get('/get')
 
 			expect(response.status).toBe(200)
-			expect(response.data).toBe('Recovered from second interceptor')
+			expect(response.data).toBe('Should reach here')
 			expect(fetchMock).toHaveBeenCalledWith(
 				'https://api.example.com/api/get',
 				expect.objectContaining({
@@ -321,7 +319,41 @@ describe('Echo', () => {
 			)
 			expect(spy1).toHaveBeenCalled()
 			expect(spy2).toHaveBeenCalled()
-			expect(spy3).not.toHaveBeenCalled()
+			expect(spy3).toHaveBeenCalled()
+		})
+
+		test('Выбросить ошибку, если просто возвращает её в перехватчике reject (Request)', async () => {
+			const spy1 = jest.fn(error => error)
+			const spy2 = jest.fn(error => {
+				return new Error('Returned request error1')
+			})
+			const spy3 = jest.fn(error => {
+				return new Error('Returned request error2')
+			})
+
+			echo.interceptors.request.use('1', null, spy1)
+			echo.interceptors.request.use('2', null, spy2)
+			echo.interceptors.request.use('3', null, spy3)
+
+			fetchMock.mockRejectOnce(() => Promise.reject(new Error('Network Error')))
+
+			try {
+				await echo.get('/get')
+				throw new Error('Should have thrown')
+			} catch (error: any) {
+				expect(error).toBeInstanceOf(Error)
+				expect(error.message).toBe('Returned request error2')
+			}
+
+			expect(fetchMock).toHaveBeenCalledWith(
+				'https://api.example.com/api/get',
+				expect.objectContaining({
+					method: 'GET'
+				})
+			)
+			expect(spy1).toHaveBeenCalled()
+			expect(spy2).toHaveBeenCalled()
+			expect(spy3).toHaveBeenCalled()
 		})
 
 		test('Удаление перехватчика', async () => {
@@ -678,7 +710,7 @@ describe('Echo', () => {
 			expect(spy).toHaveBeenCalled()
 		})
 
-		test('Несколько перехватчиков reject -> прекращение цепочки после первого восстановления', async () => {
+		test('Несколько перехватчиков reject -> не прекращаем цепочку после первого восстановления', async () => {
 			const errorConfig: EchoConfig = { method: 'GET', url: '/error' }
 
 			const spy1 = jest.fn(error => error)
@@ -686,7 +718,7 @@ describe('Echo', () => {
 				return { data: 'Recovered from second interceptor', status: 200 }
 			})
 			const spy3 = jest.fn(() => {
-				return { data: 'Should not reach here', status: 200 }
+				return { data: 'Should reach here', status: 200 }
 			})
 
 			echo.interceptors.response.use('1', null, spy1)
@@ -700,7 +732,7 @@ describe('Echo', () => {
 			const response = await echo.get('/get')
 
 			expect(response.status).toBe(200)
-			expect(response.data).toBe('Recovered from second interceptor')
+			expect(response.data).toBe('Should reach here')
 			expect(fetchMock).toHaveBeenCalledWith(
 				'https://api.example.com/api/get',
 				expect.objectContaining({
@@ -709,7 +741,44 @@ describe('Echo', () => {
 			)
 			expect(spy1).toHaveBeenCalled()
 			expect(spy2).toHaveBeenCalled()
-			expect(spy3).not.toHaveBeenCalled()
+			expect(spy3).toHaveBeenCalled()
+		})
+
+		test('Выбросить ошибку, если просто возвращает её в перехватчике reject', async () => {
+			const errorConfig: EchoConfig = { method: 'GET', url: '/error' }
+
+			const spy1 = jest.fn(error => error)
+			const spy2 = jest.fn(error => {
+				return new Error('Returned response error1')
+			})
+			const spy3 = jest.fn(error => {
+				return new Error('Returned response error2')
+			})
+
+			echo.interceptors.response.use('1', null, spy1)
+			echo.interceptors.response.use('2', null, spy2)
+			echo.interceptors.response.use('3', null, spy3)
+
+			fetchMock.mockRejectOnce(() =>
+				Promise.reject(new EchoError('Network Error', errorConfig, errorConfig))
+			)
+
+			try {
+				await echo.get('/get')
+			} catch (error: any) {
+				expect(error).toBeInstanceOf(Error)
+				expect(error.message).toBe('Returned response error2')
+			}
+
+			expect(fetchMock).toHaveBeenCalledWith(
+				'https://api.example.com/api/get',
+				expect.objectContaining({
+					method: 'GET'
+				})
+			)
+			expect(spy1).toHaveBeenCalled()
+			expect(spy2).toHaveBeenCalled()
+			expect(spy3).toHaveBeenCalled()
 		})
 
 		test('Удаление перехватчика', async () => {

@@ -1,6 +1,15 @@
 export const formattedBody = (body: any): BodyInit | undefined => {
-	if (!body) return
-	return body instanceof FormData || typeof body === 'string'
-		? body
-		: JSON.stringify(body)
+	if (body == null) return undefined
+
+	if (
+		body instanceof Blob ||
+		body instanceof ArrayBuffer ||
+		body instanceof FormData ||
+		body instanceof URLSearchParams ||
+		typeof body === 'string'
+	) {
+		return body
+	}
+
+	return JSON.stringify(body)
 }

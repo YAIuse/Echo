@@ -28,7 +28,7 @@ export class EchoClient {
 			body: formattedBody(body)
 		}
 
-		if (body instanceof FormData) {
+		if (body instanceof FormData || body instanceof Blob) {
 			delete request.headers?.['Content-Type']
 		}
 

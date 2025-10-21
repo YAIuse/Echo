@@ -49,15 +49,21 @@ export class Echo extends EchoClient {
 					if (result !== input) {
 						input = result
 						isHandled = true
-						break
 					}
 				} catch (err) {
 					throw err
 				}
 			}
 
-			if (isHandled) return input
-			throw input
+			if (
+				isEchoError(input) ||
+				input instanceof Error ||
+				(input?.message && input?.status >= 400)
+			) {
+				throw input
+			}
+
+			return isHandled ? input : Promise.reject(input)
 		}
 
 		const request = async <T>(

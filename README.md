@@ -232,24 +232,8 @@ Interceptors let you intercept and modify requests or responses (and even errors
 
 ### Execution Flow:
 
-- All `onFulfilled` handlers execute sequentially in the order added.
-- If an error occurs during the request process, the `onRejected` handlers for requests are invoked in order until one recovers the error.
-- These handlers catch only errors related to the request setup.
-  If none recover, the error is propagated.
-
-## Response Interceptors
-
-### Purpose:
-
-- **onFulfilled**: Modify or transform the response.
-- **onRejected**: Handle errors during response processing.
-
-### Execution Flow:
-
-- All `onFulfilled` handlers execute sequentially.
-- If an error occurs during response processing, the `onRejected` handlers for responses are invoked sequentially until one recovers the error.
-- These handlers catch only errors related to response handling.
-- If none recover, the error is thrown.
+- All `onFulfilled` and `onRejected` handlers execute sequentially in the order added.
+- Always return an error in `onRejected`
 
 ### Example:
 
@@ -267,9 +251,9 @@ echoAuth.interceptors.request.use(
 		}
 		return config
 	},
-	error => {
+	reject => {
 		// Optionally handle errors during config preparation
-		return error
+		return reject
 	}
 )
 
@@ -280,16 +264,16 @@ echoAuth.interceptors.response.use(
 		// Optionally modify response
 		return response
 	},
-	async error => {
-		// Example of response error handling
-		if (isEchoError(error)) {
-			const originalConfig: EchoConfig & { _isRetry?: boolean } = error.config
+	async reject => {
+		// Example of response reject handling
+		if (isEchoError(reject)) {
+			const originalConfig: EchoConfig & { _isRetry?: boolean } = reject.config
 
 			// Check valid request
 			const validRequest =
-				error.response?.status === 401 &&
-				(error.message === 'jwt expired' ||
-					error.message === 'jwt must be provided')
+				reject.response?.status === 401 &&
+				(reject.message === 'jwt expired' ||
+					reject.message === 'jwt must be provided')
 
 			if (!originalConfig._isRetry && validRequest) {
 				originalConfig._isRetry = true
@@ -311,7 +295,8 @@ echoAuth.interceptors.response.use(
 		}
 
 		// Return error if it is not handled
-		return error
+		// Always return error
+		return reject
 	}
 )
 ```
@@ -372,7 +357,7 @@ echo.get('/user/12345').catch(error => {
 
 ## Using multipart/form-data
 
-When sending **FormData**, you do not need to set the `Content-Type` header manually. `echo` will automatically remove it so that `fetch` applies the appropriate header.
+When sending **FormData** | **Blob**, you do not need to set the `Content-Type` header manually. `echo` will automatically remove it so that `fetch` applies the appropriate header.
 
 ## TypeScript & ES6
 
