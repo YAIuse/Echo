@@ -136,6 +136,55 @@ describe('EchoClient', () => {
 		)
 	})
 
+	test('GET запрос с абсолютным url', async () => {
+		fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
+			status: 200,
+			headers: { 'Content-Type': 'application/json' }
+		})
+
+		const response = await client.get(
+			'https://s3-yaitube.s3.yandexcloud.kz/origin/cmh0lva3f0001u864rdjcrb1g/cmh1qzyca000fu8y09fsho7p7.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=YCB2BlFmzmz2Bv0-VcADVp2bw%2F20251022%2Fkz1%2Fs3%2Faws4_request&X-Amz-Date=20251022T084523Z&X-Amz-Expires=3600&X-Amz-Signature=e989e0179cd00226fa53e77d0817275cdd21886524fa7d1a81e138b56804ec18&X-Amz-SignedHeaders=host&partNumber=3&uploadId=000641BB56716FBA&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-sdk-checksum-algorithm=CRC32&x-id=UploadPart'
+		)
+
+		expect(response.status).toBe(200)
+		expect(response.data).toEqual({ message: 'Success' })
+		expect(fetchMock).toHaveBeenCalledWith(
+			'https://s3-yaitube.s3.yandexcloud.kz/origin/cmh0lva3f0001u864rdjcrb1g/cmh1qzyca000fu8y09fsho7p7.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=YCB2BlFmzmz2Bv0-VcADVp2bw%2F20251022%2Fkz1%2Fs3%2Faws4_request&X-Amz-Date=20251022T084523Z&X-Amz-Expires=3600&X-Amz-Signature=e989e0179cd00226fa53e77d0817275cdd21886524fa7d1a81e138b56804ec18&X-Amz-SignedHeaders=host&partNumber=3&uploadId=000641BB56716FBA&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-sdk-checksum-algorithm=CRC32&x-id=UploadPart',
+			expect.objectContaining({
+				method: 'GET',
+				headers: expect.objectContaining({
+					'Content-Type': 'application/json'
+				})
+			})
+		)
+	})
+
+	test('GET запрос с абсолютным url и params', async () => {
+		fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
+			status: 200,
+			headers: { 'Content-Type': 'application/json' }
+		})
+
+		const response = await client.get(
+			'https://s3-yaitube.s3.yandexcloud.kz/origin/cmh0lva3f0001u864rdjcrb1g/cmh1qzyca000fu8y09fsho7p7.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=YCB2BlFmzmz2Bv0-VcADVp2bw%2F20251022%2Fkz1%2Fs3%2Faws4_request&X-Amz-Date=20251022T084523Z&X-Amz-Expires=3600&X-Amz-Signature=e989e0179cd00226fa53e77d0817275cdd21886524fa7d1a81e138b56804ec18&X-Amz-SignedHeaders=host&partNumber=3&uploadId=000641BB56716FBA&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-sdk-checksum-algorithm=CRC32&x-id=UploadPart',
+			{
+				params: { q: [2, 3], sort: 'desc' }
+			}
+		)
+
+		expect(response.status).toBe(200)
+		expect(response.data).toEqual({ message: 'Success' })
+		expect(fetchMock).toHaveBeenCalledWith(
+			'https://s3-yaitube.s3.yandexcloud.kz/origin/cmh0lva3f0001u864rdjcrb1g/cmh1qzyca000fu8y09fsho7p7.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=YCB2BlFmzmz2Bv0-VcADVp2bw%2F20251022%2Fkz1%2Fs3%2Faws4_request&X-Amz-Date=20251022T084523Z&X-Amz-Expires=3600&X-Amz-Signature=e989e0179cd00226fa53e77d0817275cdd21886524fa7d1a81e138b56804ec18&X-Amz-SignedHeaders=host&partNumber=3&uploadId=000641BB56716FBA&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-sdk-checksum-algorithm=CRC32&x-id=UploadPart&q=2&q=3&sort=desc',
+			expect.objectContaining({
+				method: 'GET',
+				headers: expect.objectContaining({
+					'Content-Type': 'application/json'
+				})
+			})
+		)
+	})
+
 	test('GET запрос без данных', async () => {
 		fetchMock.mockResponseOnce('', {
 			status: 204,
@@ -368,7 +417,7 @@ describe('EchoClient', () => {
 	})
 
 	test('GET запрос без responseType -> unknown', async () => {
-		fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
+		fetchMock.mockResponseOnce('', {
 			status: 200,
 			headers: { 'Content-Type': 'unknown' }
 		})
@@ -376,7 +425,7 @@ describe('EchoClient', () => {
 		const response = await client.get('/unknown')
 
 		expect(response.status).toBe(200)
-		expect(response.data).toEqual({ message: 'Success' })
+		expect(`${response.data}`).toBe('[object Blob]')
 		expect(fetchMock).toHaveBeenCalledWith(
 			'https://api.example.com/api/unknown',
 			expect.objectContaining({
@@ -428,6 +477,29 @@ describe('EchoClient', () => {
 			expect.objectContaining({
 				method: 'POST',
 				body: expect.any(FormData),
+				headers: expect.objectContaining({})
+			})
+		)
+	})
+
+	test('POST запрос c Blob', async () => {
+		const blob = new Blob(['test content'])
+
+		fetchMock.mockResponseOnce('Success', {
+			status: 200,
+			headers: { 'Content-Type': 'text/xml' }
+		})
+
+		const response = await client.post('/upload', blob)
+
+		expect(response.request.body instanceof Blob).toBe(true)
+		expect(response.status).toBe(200)
+		expect(response.data).toBe('Success')
+		expect(fetchMock).toHaveBeenCalledWith(
+			'https://api.example.com/api/upload',
+			expect.objectContaining({
+				method: 'POST',
+				body: expect.any(Blob),
 				headers: expect.objectContaining({})
 			})
 		)

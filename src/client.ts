@@ -6,10 +6,9 @@ import type {
 	EchoRequestOptions,
 	EchoResponse
 } from './types'
-import { buildQueryParams } from './utils/buildQueryParams'
+import { buildFullUrl } from './utils/buildFullUrl'
 import { deepMerge } from './utils/deepMerge'
 import { formattedBody } from './utils/formattedBody'
-import { joinURL } from './utils/joinURL'
 
 export type EchoClientInstance = Omit<EchoClient, 'createConfig'>
 
@@ -19,13 +18,13 @@ export class EchoClient {
 	protected configurator = (config: EchoConfig) => {
 		const { baseURL, url, params, body, ...configure } = {
 			...config,
-			headers: { ...config.headers }
+			...(config.headers && { headers: { ...config.headers } })
 		}
 
 		const request: EchoRequest = {
 			...configure,
-			url: joinURL(baseURL, url) + buildQueryParams(params),
-			body: formattedBody(body)
+			url: buildFullUrl(baseURL, url, params),
+			...(body && { body: formattedBody(body) })
 		}
 
 		if (body instanceof FormData || body instanceof Blob) {
@@ -42,10 +41,10 @@ export class EchoClient {
 			if (contentType.includes('application/json')) {
 				return res.json().catch(() => null)
 			}
-			if (contentType.includes('text/plain')) {
+			if (contentType.includes('text/') || contentType.includes('xml')) {
 				return res.text().catch(() => null)
 			}
-			return res.json().catch(() => null)
+			return res.blob().catch(() => null)
 		} else {
 			switch (req.responseType) {
 				case 'json':
@@ -119,18 +118,16 @@ export class EchoClient {
 		}
 	})
 
-	request = async <T>(configure: EchoConfig): Promise<EchoResponse<T>> => {
-		const { request } = this.configurator(
-			deepMerge(this.createConfig, configure)
-		)
+	request = async <T>(config: EchoConfig): Promise<EchoResponse<T>> => {
+		const { request } = this.configurator(deepMerge(this.createConfig, config))
 
 		try {
-			return await this.fetch<T>(configure, request)
+			return await this.fetch<T>(config, request)
 		} catch (err: any) {
 			if (isEchoError(err)) throw err
 
 			const errorMessage = err.message || 'Unexpected error'
-			throw new EchoError(errorMessage, configure, request)
+			throw new EchoError(errorMessage, config, request)
 		}
 	}
 	get = this.methods(this.request).get
