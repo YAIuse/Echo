@@ -51,6 +51,7 @@ export type EchoConfig = Omit<RequestInit, 'method' | 'headers' | 'body'> & {
 	headers?: Record<string, string>
 	responseType?: EchoResponseType
 	body?: any
+	duplex?: 'half' | 'full'
 }
 export type EchoCreateConfig = Omit<EchoConfig, 'url' | 'method'>
 

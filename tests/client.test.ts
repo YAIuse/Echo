@@ -461,7 +461,7 @@ describe('EchoClient', () => {
 
 	test('POST запрос c FormData', async () => {
 		const formData = new FormData()
-		formData.append('file', new Blob(['test content']), 'test.txt')
+		formData.append('file', new Blob(), 'test.txt')
 
 		fetchMock.mockResponseOnce('Success', {
 			status: 200,
@@ -483,7 +483,7 @@ describe('EchoClient', () => {
 	})
 
 	test('POST запрос c Blob', async () => {
-		const blob = new Blob(['test content'])
+		const blob = new Blob()
 
 		fetchMock.mockResponseOnce('Success', {
 			status: 200,
@@ -500,6 +500,31 @@ describe('EchoClient', () => {
 			expect.objectContaining({
 				method: 'POST',
 				body: expect.any(Blob),
+				headers: expect.objectContaining({})
+			})
+		)
+	})
+
+	test('POST запрос c ReadableStream', async () => {
+		const readableStream = new ReadableStream()
+
+		fetchMock.mockResponseOnce('Success', {
+			status: 200,
+			headers: { 'Content-Type': 'text/xml' }
+		})
+
+		const response = await client.post('/upload', readableStream, {
+			duplex: 'half'
+		})
+
+		expect(response.request.body instanceof ReadableStream).toBe(true)
+		expect(response.status).toBe(200)
+		expect(response.data).toBe('Success')
+		expect(fetchMock).toHaveBeenCalledWith(
+			'https://api.example.com/api/upload',
+			expect.objectContaining({
+				method: 'POST',
+				body: expect.any(ReadableStream),
 				headers: expect.objectContaining({})
 			})
 		)

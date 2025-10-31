@@ -3,7 +3,7 @@ export const formattedBody = (body: any): BodyInit | undefined => {
 		body instanceof Blob ||
 		body instanceof ArrayBuffer ||
 		body instanceof FormData ||
-		body instanceof URLSearchParams ||
+		body instanceof ReadableStream ||
 		typeof body === 'string' ||
 		body === null ||
 		body === undefined
