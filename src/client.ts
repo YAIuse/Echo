@@ -36,14 +36,23 @@ export class EchoClient {
 
 	private returnResponseData = async (req: EchoRequest, res: Response) => {
 		if (!res.ok || !req.responseType) {
-			const contentType = res.headers?.get('Content-Type') || ''
+			const contentType = res.headers?.get('content-type') || ''
 
-			if (contentType.includes('application/json')) {
+			if (contentType.startsWith('application/json')) {
 				return res.json().catch(() => null)
 			}
-			if (contentType.includes('text/') || contentType.includes('xml')) {
+			if (
+				contentType.startsWith('text/') ||
+				contentType.includes('xml') ||
+				contentType.includes('html')
+			) {
 				return res.text().catch(() => null)
 			}
+
+			if (res.status === 204 || res.headers.get('content-length') === '0') {
+				return null
+			}
+
 			return res.blob().catch(() => null)
 		} else {
 			switch (req.responseType) {

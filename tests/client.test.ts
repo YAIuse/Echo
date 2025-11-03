@@ -191,10 +191,31 @@ describe('EchoClient', () => {
 			headers: { 'Content-Type': 'application/json' }
 		})
 
-		const response = await client.get('/no-content')
+		const response = await client.get('/null-content')
 
 		expect(response.status).toBe(204)
 		expect(response.data).toBeNull()
+		expect(fetchMock).toHaveBeenCalledWith(
+			'https://api.example.com/api/null-content',
+			expect.objectContaining({
+				method: 'GET',
+				headers: expect.objectContaining({
+					'Content-Type': 'application/json'
+				})
+			})
+		)
+	})
+
+	test('GET запрос c ответом null', async () => {
+		fetchMock.mockResponseOnce(JSON.stringify(null), {
+			status: 200,
+			headers: { 'Content-Type': 'application/json' }
+		})
+
+		const response = await client.get('/no-content')
+
+		expect(response.status).toBe(200)
+		expect(response.data).toBe(null)
 		expect(fetchMock).toHaveBeenCalledWith(
 			'https://api.example.com/api/no-content',
 			expect.objectContaining({
