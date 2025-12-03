@@ -1,13 +1,11 @@
 name: 'Common Setup'
-description: 'Composite action to checkout repository, setup Node.js, install Bun and cache dependencies'
+description: 'Checkout repo, setup Node.js, install Bun, cache dependencies'
 
 inputs:
   node-version:
-    description: 'Node.js version to install'
     required: false
     default: '24.11.1'
   bun-version:
-    description: 'Bun version to install'
     required: false
     default: '1.3.3'
 
@@ -30,7 +28,9 @@ runs:
     - name: Cache Bun dependencies
       uses: actions/cache@v4
       with:
-        path: ~/.bun/install/cache
+        path: |
+          ~/.bun
+          ~/.cache/bun
         key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
         restore-keys: |
           ${{ runner.os }}-bun-
