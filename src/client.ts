@@ -64,8 +64,6 @@ export class EchoClient {
 					return res.arrayBuffer()
 				case 'blob':
 					return res.blob()
-				case 'bytes':
-					return res.bytes()
 				case 'formData':
 					return res.formData()
 				case 'stream':

@@ -16,7 +16,6 @@ export const EchoResponseType = {
 	TEXT: 'text',
 	ARRAY_BUFFER: 'arrayBuffer',
 	BLOB: 'blob',
-	BYTES: 'bytes',
 	FORM_DATA: 'formData',
 	STREAM: 'stream',
 	ORIGINAL: 'original'

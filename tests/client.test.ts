@@ -206,6 +206,27 @@ describe('EchoClient', () => {
 		)
 	})
 
+	test('GET запрос без данных с ответом 204', async () => {
+		fetchMock.mockResponseOnce('', {
+			status: 204,
+			headers: { 'Content-Type': '' }
+		})
+
+		const response = await client.get('/null-content')
+
+		expect(response.status).toBe(204)
+		expect(response.data).toBeNull()
+		expect(fetchMock).toHaveBeenCalledWith(
+			'https://api.example.com/api/null-content',
+			expect.objectContaining({
+				method: 'GET',
+				headers: expect.objectContaining({
+					'Content-Type': 'application/json'
+				})
+			})
+		)
+	})
+
 	test('GET запрос c ответом null', async () => {
 		fetchMock.mockResponseOnce(JSON.stringify(null), {
 			status: 200,
@@ -325,6 +346,43 @@ describe('EchoClient', () => {
 				headers: expect.objectContaining({
 					'Content-Type': 'application/json'
 				})
+			})
+		)
+	})
+
+	test('GET запрос c responseType -> formData', async () => {
+		const mockFormData = new FormData()
+		mockFormData.append('foo', 'bar')
+		mockFormData.append(
+			'file',
+			new Blob(['hello'], { type: 'text/plain' }),
+			'test.txt'
+		)
+
+		fetchMock.mockResolvedValueOnce({
+			ok: true,
+			status: 200,
+			headers: new Headers({ 'Content-Type': 'multipart/form-data' }),
+			formData: () => Promise.resolve(mockFormData)
+		} as Response)
+
+		const response = await client.get<FormData>('/formData', {
+			responseType: 'formData'
+		})
+
+		expect(response.status).toBe(200)
+		expect(response.data).toBeInstanceOf(FormData)
+		expect(response.data.get('foo')).toBe('bar')
+
+		const file = response.data.get('file') as File
+		expect(file).toBeInstanceOf(Blob)
+		expect(file.name).toBe('test.txt')
+
+		expect(fetchMock).toHaveBeenCalledTimes(1)
+		expect(fetchMock).toHaveBeenCalledWith(
+			'https://api.example.com/api/formData',
+			expect.objectContaining({
+				method: 'GET'
 			})
 		)
 	})

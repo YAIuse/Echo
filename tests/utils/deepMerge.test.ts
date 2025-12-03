@@ -45,7 +45,12 @@ describe('deepMerge', () => {
 			c: { d: undefined, b: null },
 			g: 'test2'
 		}
-		const source = { a: 2, b: new Set([3, 4]), c: { e: 2, b: 1 }, f: 'test' }
+		const source = {
+			a: 2,
+			b: new Set([3, 4]),
+			c: { e: 2, b: 1 },
+			f: 'test'
+		}
 
 		const result = deepMerge(target, source)
 

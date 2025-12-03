@@ -5,11 +5,11 @@ inputs:
   node-version:
     description: 'Node.js version to install'
     required: false
-    default: '22.12'
+    default: '24.11.1'
   bun-version:
     description: 'Bun version to install'
     required: false
-    default: '1.2.2'
+    default: '1.3.3'
 
 runs:
   using: 'composite'

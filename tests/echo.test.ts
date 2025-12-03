@@ -41,7 +41,10 @@ describe('Echo', () => {
 			const spy = jest.fn(config => {
 				expect(config.method).toBe('GET')
 				expect(config.url).toBe('/get')
-				config.headers = { ...config.headers, Authorization: 'Bearer token' }
+				config.headers = {
+					...config.headers,
+					Authorization: 'Bearer token'
+				}
 				return config
 			})
 
@@ -106,7 +109,10 @@ describe('Echo', () => {
 
 		test('Неправильное добавление перехватчиков', async () => {
 			const spy1 = jest.fn(config => {
-				config.headers = { ...config.headers, Authorization: 'Bearer token' }
+				config.headers = {
+					...config.headers,
+					Authorization: 'Bearer token'
+				}
 				return config
 			})
 			const spy2 = jest.fn(config => {
@@ -295,7 +301,10 @@ describe('Echo', () => {
 				return error
 			})
 			const spy2 = jest.fn(() => {
-				return { data: 'Recovered from second interceptor', status: 200 }
+				return {
+					data: 'Recovered from second interceptor',
+					status: 200
+				}
 			})
 			const spy3 = jest.fn(() => {
 				return { data: 'Should reach here', status: 200 }
@@ -358,7 +367,10 @@ describe('Echo', () => {
 
 		test('Удаление перехватчика', async () => {
 			const spy = jest.fn(config => {
-				config.headers = { ...config.headers, Authorization: 'Bearer token' }
+				config.headers = {
+					...config.headers,
+					Authorization: 'Bearer token'
+				}
 				return config
 			})
 
@@ -389,11 +401,17 @@ describe('Echo', () => {
 
 		test('Очистка перехватчиков', async () => {
 			const spy1 = jest.fn(config => {
-				config.headers = { ...config.headers, Authorization: 'Bearer token222' }
+				config.headers = {
+					...config.headers,
+					Authorization: 'Bearer token222'
+				}
 				return config
 			})
 			const spy2 = jest.fn(config => {
-				config.headers = { ...config.headers, Authorization: 'Bearer token' }
+				config.headers = {
+					...config.headers,
+					Authorization: 'Bearer token'
+				}
 				return config
 			})
 
@@ -463,7 +481,10 @@ describe('Echo', () => {
 				return response
 			})
 			const spy2 = jest.fn(response => {
-				expect(response.data).toEqual({ first: true, message: 'Success' })
+				expect(response.data).toEqual({
+					first: true,
+					message: 'Success'
+				})
 
 				response.data.second = true
 				return response
@@ -715,7 +736,10 @@ describe('Echo', () => {
 
 			const spy1 = jest.fn(error => error)
 			const spy2 = jest.fn(() => {
-				return { data: 'Recovered from second interceptor', status: 200 }
+				return {
+					data: 'Recovered from second interceptor',
+					status: 200
+				}
 			})
 			const spy3 = jest.fn(() => {
 				return { data: 'Should reach here', status: 200 }

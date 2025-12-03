@@ -103,7 +103,10 @@ export class Echo extends EchoClient {
 							| null,
 						onRejected?: null | ((error: any) => any)
 					) => {
-						requestInterceptors.set(key, { onFulfilled, onRejected })
+						requestInterceptors.set(key, {
+							onFulfilled,
+							onRejected
+						})
 					},
 					eject: (key: string) => requestInterceptors.delete(key),
 					clear: () => requestInterceptors.clear()
@@ -116,7 +119,10 @@ export class Echo extends EchoClient {
 							| ((value: EchoResponse) => EchoResponse | Promise<EchoResponse>),
 						onRejected?: null | ((error: any) => any)
 					) => {
-						responseInterceptors.set(key, { onFulfilled, onRejected })
+						responseInterceptors.set(key, {
+							onFulfilled,
+							onRejected
+						})
 					},
 					eject: (key: string) => responseInterceptors.delete(key),
 					clear: () => responseInterceptors.clear()

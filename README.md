@@ -1,6 +1,6 @@
 <div align="center">
-    <a href="https://github.com/YAI-team/echo/" target="blank">
-        <img src="https://raw.githubusercontent.com/YAI-team/echo/main/public/favicon.svg" width="500" alt="Project Logo" />
+    <a href="https://github.com/yaiuse/echo/" target="blank">
+        <img src="https://raw.githubusercontent.com/yaiuse/echo/main/public/favicon.svg" width="500" alt="Project Logo" />
     </a>
 </div>
 
@@ -8,15 +8,15 @@
 
 <div align="center">
 
-[![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-blue?logo=github)](https://github.com/YAI-team/Echo)
-[![npm Package](https://img.shields.io/npm/v/@yai-team/echo?color=blue&logo=npm)](https://www.npmjs.com/package/@yai-team/echo)
-[![npm Downloads](https://img.shields.io/npm/dm/@yai-team/echo?color=green&logo=npm)](https://www.npmjs.com/package/@yai-team/echo)
-[![Install Size](https://img.shields.io/badge/dynamic/json?url=https://packagephobia.com/v2/api.json?p=@yai-team/echo&query=$.install.pretty&label=install%20size&style=flat-square)](https://packagephobia.com/result?p=@yai-team/echo)
-[![Bundle Size](https://img.shields.io/bundlephobia/minzip/@yai-team/echo?color=purple&logo=webpack)](https://bundlephobia.com/package/@yai-team/echo@latest)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/YAI-team/Echo/tests.yaml?branch=main&logo=githubactions)](https://github.com/YAI-team/Echo/actions)
-[![Coverage Status](https://codecov.io/gh/YAI-team/Echo/branch/main/graph/badge.svg)](https://app.codecov.io/gh/YAI-team/Echo)
-[![Snyk Security](https://snyk.io/test/npm/@yai-team/echo/badge.svg)](https://snyk.io/test/npm/@yai-team/echo)
-[![License](https://img.shields.io/github/license/YAI-team/Echo?color=green)](https://github.com/YAI-team/Echo/blob/main/LICENSE)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-blue?logo=github)](https://github.com/yaiuse/Echo)
+[![npm Package](https://img.shields.io/npm/v/@yaiuse/echo?color=blue&logo=npm)](https://www.npmjs.com/package/@yaiuse/echo)
+[![npm Downloads](https://img.shields.io/npm/dm/@yaiuse/echo?color=green&logo=npm)](https://www.npmjs.com/package/@yaiuse/echo)
+[![Install Size](https://img.shields.io/badge/dynamic/json?url=https://packagephobia.com/v2/api.json?p=@yaiuse/echo&query=$.install.pretty&label=install%20size&style=flat-square)](https://packagephobia.com/result?p=@yaiuse/echo)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/@yaiuse/echo?color=purple&logo=webpack)](https://bundlephobia.com/package/@yaiuse/echo@latest)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/yaiuse/Echo/tests.yaml?branch=main&logo=githubactions)](https://github.com/yaiuse/Echo/actions)
+[![Coverage Status](https://codecov.io/gh/yaiuse/Echo/branch/main/graph/badge.svg)](https://app.codecov.io/gh/yaiuse/Echo)
+[![Snyk Security](https://snyk.io/test/npm/@yaiuse/echo/badge.svg)](https://snyk.io/test/npm/@yaiuse/echo)
+[![License](https://img.shields.io/github/license/yaiuse/Echo?color=green)](https://github.com/yaiuse/Echo/blob/main/LICENSE)
 
 </div>
 
@@ -45,11 +45,11 @@ This is a lightweight HTTP client based on the built-in `fetch`, featuring a con
 
 ```bash
 # using npm
-$ npm install @yai-team/echo
+$ npm install @yaiuse/echo
 # or using yarn
-$ yarn add @yai-team/echo
+$ yarn add @yaiuse/echo
 # or using bun
-$ bun add @yai-team/echo
+$ bun add @yaiuse/echo
 ```
 
 ## Quick Start
@@ -59,7 +59,7 @@ After installation, you can use an instance created via create to benefit from i
 > **Note:** Only instances created via `echo.create(config)` support interceptors. The default `echo` instance (created without `create`) does not support interceptors.
 
 ```javascript
-import echo from '@yai-team/echo'
+import echo from '@yaiuse/echo'
 
 // Create an instance with base configuration and interceptors support
 const echoBase = echo.create({
@@ -106,7 +106,7 @@ Where:
 Example of creating an instance:
 
 ```javascript
-import echo from '@yai-team/echo'
+import echo from '@yaiuse/echo'
 
 // Define configuration
 const config: EchoCreateConfig = {
@@ -134,14 +134,14 @@ This can be useful for middleware requests that do not require interceptors or a
 
 ```javascript
 const echoServer = (
+    accessToken?: string,
     refreshToken?: string,
-    accessToken?: string
 ): EchoClientInstance =>
     new EchoClient({
         ...config,
         headers: {
-            ...(refreshToken && { Cookie: REFRESH(refreshToken) }),
-            ...(accessToken && { Authorization: BEARER(accessToken) })
+            ...(accessToken && { Authorization: BEARER(accessToken) }),
+            ...(refreshToken && { Cookie: REFRESH(refreshToken) })
         }
     })
 ```
@@ -209,7 +209,7 @@ A response object contains:
 Example:
 
 ```javascript
-echo.get('/users').then(response => {
+echoBase.get('/users').then(response => {
 	console.log(response.data)
 	console.log(response.status)
 	console.log(response.statusText)
@@ -267,29 +267,24 @@ echoAuth.interceptors.response.use(
 	async reject => {
 		// Example of response reject handling
 		if (isEchoError(reject)) {
-			const originalConfig: EchoConfig & { _isRetry?: boolean } = reject.config
+			const originRequest: EchoConfig & { _isRetry?: boolean } = reject.config
+			const status401 = reject.response?.status === 401
+			const validRequest = !originRequest._isRetry && status401
 
 			// Check valid request
-			const validRequest =
-				reject.response?.status === 401 &&
-				(reject.message === 'jwt expired' ||
-					reject.message === 'jwt must be provided')
+			if (!validRequest) return reject
 
-			if (!originalConfig._isRetry && validRequest) {
-				originalConfig._isRetry = true
+			originRequest._isRetry = true
 
+			if (reject.message === 'Unauthorized') {
+				removeAccessToken()
+			} else if (reject.message === 'Jwt expired') {
 				try {
 					// Get new tokens
 					await tokenService.getNewTokens()
-
-					// Retry request
-					return await echoAuth.request(originalConfig)
-				} catch (err) {
-					if (validRequest) {
-						// Remove tokens if they are invalid
-						removeAccessToken()
-					}
-					throw err
+					echoAuth.request(originRequest)
+				} catch {
+					removeAccessToken()
 				}
 			}
 		}
@@ -308,22 +303,22 @@ You can manage interceptors with these methods:
 - **Add an interceptor**:
 
 ```javascript
-echoBase.interceptors.request.use('uniqueKey', onFulfilled, onRejected)
-echoBase.interceptors.response.use('uniqueKey', onFulfilled, onRejected)
+echoAuth.interceptors.request.use('uniqueKey', onFulfilled, onRejected)
+echoAuth.interceptors.response.use('uniqueKey', onFulfilled, onRejected)
 ```
 
 - **Remove a specific interceptor**:
 
 ```javascript
-echoBase.interceptors.request.eject('uniqueKey')
-echoBase.interceptors.response.eject('uniqueKey')
+echoAuth.interceptors.request.eject('uniqueKey')
+echoAuth.interceptors.response.eject('uniqueKey')
 ```
 
 - **Clear all interceptors**:
 
 ```javascript
-echoBase.interceptors.request.clear()
-echoBase.interceptors.response.clear()
+echoAuth.interceptors.request.clear()
+echoAuth.interceptors.response.clear()
 ```
 
 ## Error Handling
