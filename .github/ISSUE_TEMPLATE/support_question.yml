@@ -15,9 +15,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        - Read all our documentation, especially the [README](https://github.com/YAI-team/Echo/blob/main/README.md). It may contain information that helps you solve your issue.
-        - Ensure your issue isn't already [reported](https://github.com/YAI-team/Echo/issues?utf8=%E2%9C%93&q=is%3Aissue).
-        - If you aren't sure that the issue is caused by Echo or you just need help, please use [Stack Overflow](https://stackoverflow.com/questions) or [our discussions](https://github.com/YAI-team/Echo/discussions).
+        - Read all our documentation, especially the [README](https://github.com/YAIuse/Echo/blob/main/README.md). It may contain information that helps you solve your issue.
+        - Ensure your issue isn't already [reported](https://github.com/YAIuse/Echo/issues?utf8=%E2%9C%93&q=is%3Aissue).
+        - If you aren't sure that the issue is caused by Echo or you just need help, please use [Stack Overflow](https://stackoverflow.com/questions) or [our discussions](https://github.com/YAIuse/Echo/discussions).
         - Ensure it isn't already fixed in the latest Echo version.
 
   - type: markdown
