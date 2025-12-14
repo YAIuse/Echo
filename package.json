@@ -65,14 +65,16 @@
 	"keywords": [
 		"echo",
 		"axios",
+		"node",
 		"http",
 		"https",
 		"fetch",
-		"node",
 		"network",
+		"browser",
 		"request",
-		"plugins",
-		"url",
-		"promise"
+		"promise",
+		"rest",
+		"api",
+		"client"
 	]
 }
