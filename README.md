@@ -230,11 +230,6 @@ Interceptors let you intercept and modify requests or responses (and even errors
 - **onFulfilled**: Modify the request configuration before sending.
 - **onRejected**: Handle errors or recover from them.
 
-### Execution Flow:
-
-- All `onFulfilled` and `onRejected` handlers execute sequentially in the order added.
-- Always return an error in `onRejected`
-
 ### Example:
 
 ```javascript
@@ -256,6 +251,18 @@ echoAuth.interceptors.request.use(
 		return reject
 	}
 )
+```
+
+## Response Interceptors
+
+### Purpose:
+
+- **onFulfilled**: Transform or inspect successful responses.
+- **onRejected**: Handle errors or recover from them.
+
+### Example:
+
+```javascript
 
 echoAuth.interceptors.response.use(
 	'auth',
@@ -295,6 +302,11 @@ echoAuth.interceptors.response.use(
 	}
 )
 ```
+
+### Execution Flow:
+
+- All `onFulfilled` and `onRejected` handlers execute sequentially in the order added.
+- Always return the error if it is not handled.
 
 ### Managing Interceptors
 
