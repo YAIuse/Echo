@@ -35,6 +35,24 @@ describe('buildParams', () => {
 		expect(result).toBe('http://example?search=test')
 	})
 
+	test('Игнорировать пустые строки в массиве', () => {
+		const params = { tags: ['foo', '', 'bar'] }
+
+		const result = buildParams(url, params)
+
+		expect(result).toBe('http://example?tags=foo&tags=bar')
+	})
+
+	test('Игнорировать undefined, null и пустые строки в массиве', () => {
+		const params = {
+			tags: ['foo', '', 'bar', undefined, null, 'baz']
+		}
+
+		const result = buildParams(url, params)
+
+		expect(result).toBe('http://example?tags=foo&tags=bar&tags=baz')
+	})
+
 	test('Возвращать изначальный url при отсутствии параметров', () => {
 		const result = buildParams(url)
 
