@@ -586,6 +586,17 @@ describe('EchoClient', () => {
 			}
 		})
 
+		test('HTTP ошибка без massage но с statusText', async () => {
+			fetchMock.mockResponseOnce('', {
+				status: 404,
+				statusText: 'Not Found'
+			})
+
+			await client.get('/error').catch((error: EchoError) => {
+				expect(error.message).toBe('Not Found')
+			})
+		})
+
 		test('Сетевые ошибки', async () => {
 			fetchMock.mockRejectOnce(() => Promise.reject(new Error('Request Error')))
 
