@@ -168,7 +168,7 @@ These are the available configuration parameters for making requests:
     params: { limit: 10 },
 
     // Expected response type (e.g., 'json' | 'text' | 'blob' | 'formData' | ...)
-    responseType: 'json', // default
+    responseType: 'json',
 
     // Other fields supported by fetch.
 }
