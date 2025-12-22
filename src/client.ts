@@ -8,6 +8,7 @@ import type {
 } from './types'
 import { buildFullUrl } from './utils/buildFullUrl'
 import { deepMerge } from './utils/deepMerge'
+import { errorMessage } from './utils/errorMessage'
 import { formattedBody } from './utils/formattedBody'
 
 export type EchoClientInstance = Omit<EchoClient, 'createConfig'>
@@ -27,52 +28,80 @@ export class EchoClient {
 			...(body && { body: formattedBody(body) })
 		}
 
-		if (body instanceof FormData || body instanceof Blob) {
+		if (request.headers && (body instanceof FormData || body instanceof Blob)) {
 			delete request.headers?.['Content-Type']
 		}
 
 		return { request }
 	}
 
-	private returnResponseData = async (req: EchoRequest, res: Response) => {
-		if (!res.ok || !req.responseType) {
-			const contentType = res.headers?.get('content-type') || ''
+	private parseByContentType = async (res: Response) => {
+		const contentTypeRaw = res.headers.get('content-type') ?? ''
+		const contentType = contentTypeRaw.split(';')[0].trim().toLowerCase()
 
-			if (contentType.startsWith('application/json')) {
-				return res.json().catch(() => null)
-			}
-			if (
-				contentType.startsWith('text/') ||
-				contentType.includes('xml') ||
-				contentType.includes('html')
-			) {
-				return res.text().catch(() => null)
-			}
+		if (res.status === 204 || res.headers.get('content-length') === '0') {
+			return null
+		}
 
-			if (res.status === 204 || res.headers.get('content-length') === '0') {
-				return null
-			}
-
-			return res.blob().catch(() => null)
-		} else {
-			switch (req.responseType) {
-				case 'json':
-					return res.json()
-				case 'text':
-					return res.text()
-				case 'arrayBuffer':
-					return res.arrayBuffer()
-				case 'blob':
-					return res.blob()
-				case 'formData':
-					return res.formData()
-				case 'stream':
-					return res.body
-				case 'original':
-					return res
+		try {
+			switch (true) {
+				case contentType === 'application/json':
+				case contentType.endsWith('+json'):
+					return await res.json()
+				case contentType === 'application/xml':
+				case contentType === 'text/xml':
+				case contentType === 'application/xhtml+xml':
+				case contentType.endsWith('+xml'):
+					return await res.text()
+				case contentType.startsWith('text/'):
+					return await res.text()
+				case contentType === 'multipart/form-data':
+				case contentType === 'application/x-www-form-urlencoded':
+					return await res.formData()
 				default:
-					throw new Error(`Unsupported responseType: ${req.responseType}`)
+					return await res.blob()
 			}
+		} catch {
+			return null
+		}
+	}
+
+	private parseByResponseType = async (responseType: string, res: Response) => {
+		switch (responseType) {
+			case 'json':
+				return await res.json()
+			case 'text':
+				return await res.text()
+			case 'arrayBuffer':
+				return await res.arrayBuffer()
+			case 'blob':
+				return await res.blob()
+			case 'formData':
+				return await res.formData()
+			case 'stream':
+				return res.body
+			case 'original':
+				return res
+			default:
+				throw new SyntaxError(`Unsupported responseType: ${responseType}`)
+		}
+	}
+
+	private returnResponseData = async (req: EchoRequest, res: Response) => {
+		if (!req.responseType) {
+			return await this.parseByContentType(res)
+		}
+
+		try {
+			return await this.parseByResponseType(req.responseType, res)
+		} catch (err) {
+			if (err instanceof Error && err.name === 'SyntaxError') {
+				throw err
+			}
+			console.warn(
+				`Failed to parse response as ${req.responseType}, falling back to automatic parsing.`
+			)
+			return await this.parseByContentType(res)
 		}
 	}
 
@@ -81,8 +110,8 @@ export class EchoClient {
 		request: EchoRequest
 	): Promise<EchoResponse<T>> => {
 		const fetchResponse = await fetch(request.url, request)
-		const { ok, status, statusText, headers } = fetchResponse
 		const data = await this.returnResponseData(request, fetchResponse)
+		const { ok, status, statusText, headers } = fetchResponse
 
 		const response: EchoResponse = {
 			data,
@@ -95,7 +124,7 @@ export class EchoClient {
 
 		if (!ok) {
 			throw new EchoError(
-				data?.message || statusText || 'Unexpected error',
+				errorMessage(data || statusText),
 				config,
 				request,
 				response
@@ -132,9 +161,7 @@ export class EchoClient {
 			return await this.fetch<T>(config, request)
 		} catch (err: any) {
 			if (isEchoError(err)) throw err
-
-			const errorMessage = err.message || 'Unexpected error'
-			throw new EchoError(errorMessage, config, request)
+			throw new EchoError(errorMessage(err.message), config, request)
 		}
 	}
 	get = this.methods(this.request).get

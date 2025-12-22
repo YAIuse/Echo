@@ -48,7 +48,7 @@ export type EchoConfig = Omit<RequestInit, 'method' | 'headers' | 'body'> & {
 	baseURL?: string
 	params?: EchoSearchParams
 	headers?: Record<string, string>
-	responseType?: EchoResponseType
+	responseType?: EchoResponseType | null
 	body?: any
 	duplex?: 'half' | 'full'
 }
