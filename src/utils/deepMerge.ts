@@ -47,11 +47,11 @@ const clone = <T>(value: T): T => {
 	}
 }
 
-export const deepMerge = <T extends PlainObject, S extends PlainObject>(
+export function deepMerge<T extends PlainObject, S extends PlainObject>(
 	target: T,
 	source: S
-): DeepMergeResult<T, S> => {
-	const result = clone(target) as PlainObject
+): DeepMergeResult<T, S> {
+	const result = clone<PlainObject>(target)
 
 	for (const [key, srcValue] of Object.entries(source)) {
 		const tgtValue = result[key]

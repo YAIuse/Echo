@@ -1,6 +1,6 @@
 import type { EchoSearchParams } from 'src/types'
 
-export const buildParams = (url: string, params?: EchoSearchParams) => {
+export function buildParams(url: string, params?: EchoSearchParams): string {
 	if (!params || Object.keys(params).length === 0) return url
 
 	const [path, existingQuery] = url.split('?')

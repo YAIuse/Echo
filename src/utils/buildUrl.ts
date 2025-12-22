@@ -1,4 +1,4 @@
-export const buildUrl = (baseURL: string | undefined, url: string): string => {
+export function buildUrl(baseURL: string | undefined, url: string): string {
 	if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(url)) return url
 
 	if (!baseURL) return url

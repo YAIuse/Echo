@@ -1,4 +1,4 @@
-export const formattedBody = (body: any): BodyInit | undefined => {
+export function formattedBody(body: any): BodyInit | undefined {
 	if (
 		body instanceof Blob ||
 		body instanceof ArrayBuffer ||
