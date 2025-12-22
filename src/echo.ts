@@ -43,23 +43,15 @@ export class Echo extends EchoClient {
 			for (const [_, { onRejected }] of interceptors) {
 				if (!onRejected) continue
 
-				try {
-					const result = await onRejected(input)
+				const result = await onRejected(input)
 
-					if (result !== input) {
-						input = result
-						isHandled = true
-					}
-				} catch (err) {
-					throw err
+				if (result !== input) {
+					input = result
+					isHandled = true
 				}
 			}
 
-			if (
-				isEchoError(input) ||
-				input instanceof Error ||
-				(input?.message && input?.status >= 400)
-			) {
+			if (isEchoError(input) || input instanceof Error) {
 				throw input
 			}
 

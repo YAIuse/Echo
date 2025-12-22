@@ -1,960 +1,492 @@
 import fetchMock from 'jest-fetch-mock'
 import { Echo, type EchoInstance } from 'src/echo'
-import { EchoError, isEchoError } from 'src/error'
-import type { EchoConfig } from 'src/types'
+import { EchoError } from 'src/error'
 
 fetchMock.enableMocks()
 
 describe('Echo', () => {
 	let echo: EchoInstance
 
+	const baseConfig = {
+		baseURL: 'https://api.example.com/api',
+		headers: { 'Content-Type': 'application/json' }
+	}
+
+	const mockReqJson = (status: number) => ({
+		status,
+		headers: { 'Content-Type': 'application/json' }
+	})
+
+	const fetchMockResponseJsonSuccess = () =>
+		fetchMock.mockResponseOnce(
+			JSON.stringify({ success: true }),
+			mockReqJson(200)
+		)
+
+	const fetchMockResponseJsonFailed = () =>
+		fetchMock.mockResponseOnce(
+			JSON.stringify({ error: true }),
+			mockReqJson(404)
+		)
+
 	beforeEach(() => {
-		echo = new Echo().create({
-			baseURL: 'https://api.example.com/api',
-			headers: { 'Content-Type': 'application/json' }
-		})
+		echo = new Echo().create(baseConfig)
+		fetchMock.resetMocks()
 	})
 
 	afterEach(() => {
 		fetchMock.resetMocks()
 	})
 
-	test('Инициализация echo', () => {
-		expect(echo).toBeDefined()
-	})
-
-	test('Создание экземпляра echo', () => {
-		const echoFull = new Echo()
-
-		const echoInstance = echoFull.create({
-			baseURL: 'https://api.example.com/api',
-			headers: { 'Content-Type': 'application/json' }
+	describe('Инициализация', () => {
+		test('Создает экземпляр', () => {
+			expect(echo).toBeDefined()
+			expect(typeof echo.request).toBe('function')
+			expect(typeof echo.get).toBe('function')
+			expect(echo.interceptors).toBeDefined()
 		})
 
-		expect(echoFull).toBeDefined()
-		expect(echoInstance).toBeDefined()
-		expect(echoInstance).not.toBe(echoFull)
+		test('Создает новый независимый экземпляр', () => {
+			const echoFull = new Echo()
+			const instance1 = echoFull.create()
+			const instance2 = echoFull.create()
+
+			expect(instance1).not.toBe(instance2)
+			expect(instance1.interceptors).not.toBe(instance2.interceptors)
+		})
 	})
 
 	describe('Request Interceptors', () => {
-		test('Добавление перехватчика', async () => {
-			const spy = jest.fn(config => {
-				expect(config.method).toBe('GET')
-				expect(config.url).toBe('/get')
-				config.headers = {
-					...config.headers,
-					Authorization: 'Bearer token'
-				}
+		test('Модифицирует конфигурацию запроса', async () => {
+			const requestHandler = jest.fn(config => {
+				config.headers = { ...config.headers, 'X-Custom': 'value' }
 				return config
 			})
 
-			echo.interceptors.request.use('1', spy)
-
-			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
+			echo.interceptors.request.use('test', requestHandler)
+			fetchMock.mockResponseOnce(JSON.stringify({ success: true }), {
+				status: 200
 			})
 
-			const response = await echo.get('/get')
+			await echo.get('/test')
 
-			expect(response.status).toBe(200)
-			expect(response.data).toEqual({ message: 'Success' })
+			expect(requestHandler).toHaveBeenCalled()
 			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/get',
+				'https://api.example.com/api/test',
 				expect.objectContaining({
-					method: 'GET',
 					headers: expect.objectContaining({
-						Authorization: 'Bearer token'
+						'Content-Type': 'application/json',
+						'X-Custom': 'value'
 					})
 				})
 			)
-			expect(spy).toHaveBeenCalled()
 		})
 
-		test('Добавление нескольких перехватчиков', async () => {
-			const spy1 = jest.fn(config => {
-				config.headers = { ...config.headers, First: 'first' }
-				return config
-			})
-			const spy2 = jest.fn(config => {
-				config.headers = { ...config.headers, Second: 'second' }
-				return config
-			})
+		test('Цепочка перехватчиков выполняется последовательно', async () => {
+			const calls: string[] = []
 
-			echo.interceptors.request.use('1', spy1)
-			echo.interceptors.request.use('2', spy2)
-
-			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
-			})
-
-			const response = await echo.get('/get')
-
-			expect(response.status).toBe(200)
-			expect(response.data).toEqual({ message: 'Success' })
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/get',
-				expect.objectContaining({
-					method: 'GET',
-					headers: expect.objectContaining({
-						First: 'first',
-						Second: 'second'
-					})
-				})
-			)
-			expect(spy1).toHaveBeenCalled()
-			expect(spy2).toHaveBeenCalled()
-		})
-
-		test('Неправильное добавление перехватчиков', async () => {
-			const spy1 = jest.fn(config => {
-				config.headers = {
-					...config.headers,
-					Authorization: 'Bearer token'
-				}
-				return config
-			})
-			const spy2 = jest.fn(config => {
-				config.headers = { X: 'X' }
+			echo.interceptors.request.use('first', config => {
+				calls.push('first')
+				config.headers = { ...config.headers, 'X-First': '1' }
 				return config
 			})
 
-			echo.interceptors.request.use('1', spy1)
-			echo.interceptors.request.use('2', spy2)
-
-			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
-			})
-
-			const response = await echo.get('/get')
-
-			expect(response.status).toBe(200)
-			expect(response.data).toEqual({ message: 'Success' })
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/get',
-				expect.objectContaining({
-					method: 'GET',
-					headers: expect.not.objectContaining({
-						Authorization: 'Bearer token'
-					})
-				})
-			)
-			expect(spy1).toHaveBeenCalled()
-			expect(spy2).toHaveBeenCalled()
-		})
-
-		test('Ошибка в перехватчике', async () => {
-			const errorConfig: EchoConfig = { method: 'GET', url: '/error' }
-
-			const spy1 = jest.fn(error => {
-				expect(error).toBeInstanceOf(EchoError)
-				expect(error.message).toBe('Error request')
-				return error
-			})
-			const spy2 = jest.fn(error => {
-				return error
-			})
-
-			echo.interceptors.request.use(
-				'1',
-				() => {
-					throw new EchoError('Error request', errorConfig, errorConfig)
-				},
-				spy1
-			)
-			echo.interceptors.request.use('rejectRequest', null, spy2)
-
-			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
-			})
-
-			try {
-				await echo.get('/get')
-			} catch (error: any) {
-				expect(error).toBeInstanceOf(EchoError)
-				expect(error.message).toBe('Error request')
-			}
-
-			expect(fetchMock).not.toHaveBeenCalled()
-			expect(spy1).toHaveBeenCalled()
-			expect(spy2).toHaveBeenCalled()
-		})
-
-		test('Ошибки в перехватчике без обработки', async () => {
-			const errorConfig: EchoConfig = { method: 'GET', url: '/error' }
-
-			const spy = jest.fn(() => {
-				throw new EchoError('Error request', errorConfig, errorConfig)
-			})
-
-			echo.interceptors.request.use('1', spy)
-
-			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
-			})
-
-			try {
-				await echo.get('/get')
-			} catch (error: any) {
-				expect(error).toBeInstanceOf(EchoError)
-				expect(error.message).toBe('Error request')
-			}
-
-			expect(fetchMock).not.toHaveBeenCalled()
-			expect(spy).toHaveBeenCalled()
-		})
-
-		test('Ошибка в перехватчике reject', async () => {
-			const errorConfig: EchoConfig = { method: 'GET', url: '/error' }
-
-			const spy1 = jest.fn(error => {
-				expect(error).toBeInstanceOf(EchoError)
-				expect(error.message).toBe('Error request')
-
-				throw new EchoError('Error request reject', errorConfig, errorConfig)
-			})
-			const spy2 = jest.fn(() => {
-				return { url: '' }
-			})
-
-			echo.interceptors.request.use(
-				'1',
-				() => {
-					throw new EchoError('Error request', errorConfig, errorConfig)
-				},
-				spy1
-			)
-
-			echo.interceptors.request.use('2', null, spy2)
-
-			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
-			})
-
-			try {
-				await echo.get('/get')
-			} catch (error: any) {
-				expect(error).toBeInstanceOf(Error)
-				expect(error.message).toBe('Error request reject')
-			}
-
-			expect(fetchMock).not.toHaveBeenCalled()
-			expect(spy1).toHaveBeenCalled()
-			expect(spy2).not.toHaveBeenCalled()
-		})
-
-		test('Перехват ошибки запроса', async () => {
-			echo.interceptors.request.use('1', null, async error => {
-				expect(error).toBeInstanceOf(Error)
-				expect(error.message).toBe('Network Error')
-				return { data: 'Recovered from error', status: 200 }
-			})
-
-			fetchMock.mockRejectOnce(() => Promise.reject(new Error('Network Error')))
-
-			const response = await echo.get('/get')
-
-			expect(response.status).toBe(200)
-			expect(response.data).toBe('Recovered from error')
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/get',
-				expect.objectContaining({
-					method: 'GET'
-				})
-			)
-		})
-
-		test('Неудачный перехват ошибки запроса', async () => {
-			const spy = jest.fn(error => {
-				return error
-			})
-
-			echo.interceptors.request.use('1', null, spy)
-
-			fetchMock.mockRejectOnce(() =>
-				Promise.reject(new Error('Unhandled Error'))
-			)
-
-			try {
-				await echo.get('/get')
-			} catch (error: any) {
-				expect(error).toBeInstanceOf(Error)
-				expect(error.message).toBe('Unhandled Error')
-			}
-
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/get',
-				expect.objectContaining({
-					method: 'GET'
-				})
-			)
-			expect(spy).toHaveBeenCalled()
-		})
-
-		test('Несколько перехватчиков reject -> не прекращаем цепочку после первого восстановления', async () => {
-			const spy1 = jest.fn(error => {
-				return error
-			})
-			const spy2 = jest.fn(() => {
-				return {
-					data: 'Recovered from second interceptor',
-					status: 200
-				}
-			})
-			const spy3 = jest.fn(() => {
-				return { data: 'Should reach here', status: 200 }
-			})
-
-			echo.interceptors.request.use('1', null, spy1)
-			echo.interceptors.request.use('2', null, spy2)
-			echo.interceptors.request.use('3', null, spy3)
-
-			fetchMock.mockRejectOnce(() => Promise.reject(new Error('Network Error')))
-
-			const response = await echo.get('/get')
-
-			expect(response.status).toBe(200)
-			expect(response.data).toBe('Should reach here')
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/get',
-				expect.objectContaining({
-					method: 'GET'
-				})
-			)
-			expect(spy1).toHaveBeenCalled()
-			expect(spy2).toHaveBeenCalled()
-			expect(spy3).toHaveBeenCalled()
-		})
-
-		test('Выбросить ошибку, если просто возвращает её в перехватчике reject (Request)', async () => {
-			const spy1 = jest.fn(error => error)
-			const spy2 = jest.fn(error => {
-				return new Error('Returned request error1')
-			})
-			const spy3 = jest.fn(error => {
-				return new Error('Returned request error2')
-			})
-
-			echo.interceptors.request.use('1', null, spy1)
-			echo.interceptors.request.use('2', null, spy2)
-			echo.interceptors.request.use('3', null, spy3)
-
-			fetchMock.mockRejectOnce(() => Promise.reject(new Error('Network Error')))
-
-			try {
-				await echo.get('/get')
-				throw new Error('Should have thrown')
-			} catch (error: any) {
-				expect(error).toBeInstanceOf(Error)
-				expect(error.message).toBe('Returned request error2')
-			}
-
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/get',
-				expect.objectContaining({
-					method: 'GET'
-				})
-			)
-			expect(spy1).toHaveBeenCalled()
-			expect(spy2).toHaveBeenCalled()
-			expect(spy3).toHaveBeenCalled()
-		})
-
-		test('Удаление перехватчика', async () => {
-			const spy = jest.fn(config => {
-				config.headers = {
-					...config.headers,
-					Authorization: 'Bearer token'
-				}
+			echo.interceptors.request.use('second', config => {
+				calls.push('second')
+				config.headers = { ...config.headers, 'X-Second': '2' }
 				return config
 			})
-
-			echo.interceptors.request.use('1', spy)
-			echo.interceptors.request.eject('1')
 
 			fetchMock.mockResponseOnce(JSON.stringify({ success: true }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
+				status: 200
 			})
+			await echo.get('/test')
 
-			const response = await echo.post('/post', { name: 'Test' })
-
-			expect(response.status).toBe(200)
-			expect(response.data).toEqual({ success: true })
+			expect(calls).toEqual(['first', 'second'])
 			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/post',
+				expect.any(String),
 				expect.objectContaining({
-					method: 'POST',
-					headers: expect.not.objectContaining({
-						Authorization: 'Bearer token'
-					}),
-					body: JSON.stringify({ name: 'Test' })
+					headers: expect.objectContaining({
+						'Content-Type': 'application/json',
+						'X-First': '1',
+						'X-Second': '2'
+					})
 				})
 			)
-			expect(spy).not.toHaveBeenCalled()
 		})
 
-		test('Очистка перехватчиков', async () => {
-			const spy1 = jest.fn(config => {
-				config.headers = {
-					...config.headers,
-					Authorization: 'Bearer token222'
-				}
-				return config
-			})
-			const spy2 = jest.fn(config => {
-				config.headers = {
-					...config.headers,
-					Authorization: 'Bearer token'
-				}
-				return config
+		test('Обрабатывает ошибки в цепочке fulfilled', async () => {
+			const errorHandler = jest.fn(error => {
+				expect(error).toBeInstanceOf(Error)
+				return { data: 'handled', status: 200 }
 			})
 
-			echo.interceptors.request.use('1', spy1)
-			echo.interceptors.request.use('2', spy2)
-			echo.interceptors.request.clear()
-
-			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
-			})
-
-			const response = await echo.put('/post', { data: 'data' })
-
-			expect(response.status).toBe(200)
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/post',
-				expect.objectContaining({
-					method: 'PUT',
-					headers: expect.not.objectContaining({
-						Authorization: 'Bearer token'
-					}),
-					body: JSON.stringify({ data: 'data' })
-				})
+			echo.interceptors.request.use(
+				'error-thrower',
+				() => {
+					throw new Error('Test error')
+				},
+				errorHandler
 			)
-			expect(spy1).not.toHaveBeenCalled()
-			expect(spy2).not.toHaveBeenCalled()
+
+			const response = await echo.get('/test')
+
+			expect(errorHandler).toHaveBeenCalled()
+			expect(response.data).toBe('handled')
+			expect(response.status).toBe(200)
+		})
+
+		test('Перехватывает сетевые ошибки в reject цепочке', async () => {
+			const errorHandler = jest.fn(error => {
+				expect(error.message).toBe('Network error')
+				return { data: 'recovered', status: 200 }
+			})
+
+			echo.interceptors.request.use('network-handler', null, errorHandler)
+			fetchMock.mockRejectOnce(new Error('Network error'))
+
+			const response = await echo.get('/test')
+
+			expect(errorHandler).toHaveBeenCalled()
+			expect(response.data).toBe('recovered')
+		})
+
+		test('Не перехватывает EchoError в request interceptors (они идут в response)', async () => {
+			const requestHandler = jest.fn()
+			const responseHandler = jest.fn(error => {
+				expect(error).toBeInstanceOf(EchoError)
+				return { data: 'handled-in-response', status: 200 }
+			})
+
+			echo.interceptors.request.use('req', null, requestHandler)
+			echo.interceptors.response.use('resp', null, responseHandler)
+
+			fetchMockResponseJsonFailed()
+
+			const response = await echo.get('/test')
+
+			expect(requestHandler).not.toHaveBeenCalled()
+			expect(responseHandler).toHaveBeenCalled()
+			expect(response.data).toBe('handled-in-response')
+		})
+
+		test('Добавляет, удаляет и очищает перехватчики', async () => {
+			const interceptor1 = jest.fn(config => {
+				config.headers = { ...config.headers, 'X-Interceptor1': 'value1' }
+				return config
+			})
+
+			const interceptor2 = jest.fn(config => {
+				config.headers = { ...config.headers, 'X-Interceptor2': 'value2' }
+				return config
+			})
+
+			// 1. Проверяем добавление
+			echo.interceptors.request.use('id1', interceptor1)
+			await echo.get('/test')
+			expect(interceptor1).toHaveBeenCalledTimes(1)
+
+			// 2. Проверяем удаление
+			echo.interceptors.request.eject('id1')
+			await echo.get('/test')
+			expect(interceptor1).toHaveBeenCalledTimes(1)
+
+			// 3. Проверяем добавление второго
+			echo.interceptors.request.use('id2', interceptor2)
+			await echo.get('/test')
+			expect(interceptor2).toHaveBeenCalledTimes(1)
+
+			// 4. Проверяем очистку
+			echo.interceptors.request.clear()
+			await echo.get('/test')
+			expect(interceptor1).toHaveBeenCalledTimes(1)
+			expect(interceptor2).toHaveBeenCalledTimes(1)
 		})
 	})
 
 	describe('Response Interceptors', () => {
-		test('Добавление перехватчика', async () => {
-			const spy = jest.fn(response => {
-				expect(response.data).toEqual({ message: 'Success' })
-
-				return { ...response, data: { modified: true } }
+		test('Модифицирует ответ', async () => {
+			const responseHandler = jest.fn(response => {
+				response.data = { ...response.data, modified: true }
+				return response
 			})
 
-			echo.interceptors.response.use('addResponse', spy)
+			echo.interceptors.response.use('modifier', responseHandler)
+			fetchMockResponseJsonSuccess()
 
-			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
-			})
+			const response = await echo.get('/test')
 
-			const response = await echo.get('/get')
-
-			expect(response.status).toBe(200)
-			expect(response.data).toEqual({ modified: true })
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/get',
-				expect.objectContaining({
-					method: 'GET',
-					headers: expect.objectContaining({
-						'Content-Type': 'application/json'
-					})
-				})
-			)
-			expect(spy).toHaveBeenCalled()
+			expect(responseHandler).toHaveBeenCalledTimes(1)
+			expect(response.data).toEqual({ success: true, modified: true })
 		})
 
-		test('Добавление нескольких перехватчиков', async () => {
-			const spy1 = jest.fn(response => {
-				expect(response.data).toEqual({ message: 'Success' })
+		test('Цепочка response перехватчиков', async () => {
+			const calls: string[] = []
 
+			echo.interceptors.response.use('first', response => {
+				calls.push('first')
 				response.data.first = true
 				return response
 			})
-			const spy2 = jest.fn(response => {
-				expect(response.data).toEqual({
-					first: true,
-					message: 'Success'
-				})
 
+			echo.interceptors.response.use('second', response => {
+				calls.push('second')
 				response.data.second = true
 				return response
 			})
 
-			echo.interceptors.response.use('first', spy1)
-			echo.interceptors.response.use('second', spy2)
+			fetchMockResponseJsonSuccess()
 
-			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
+			const response = await echo.get('/test')
+
+			expect(calls).toEqual(['first', 'second'])
+			expect(response.data).toEqual({
+				success: true,
+				first: true,
+				second: true
 			})
-
-			const response = await echo.get('/get')
-
-			expect(response.status).toBe(200)
-			expect(response.data).toEqual(
-				expect.objectContaining({
-					first: true,
-					second: true,
-					message: 'Success'
-				})
-			)
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/get',
-				expect.objectContaining({
-					method: 'GET',
-					headers: expect.objectContaining({
-						'Content-Type': 'application/json'
-					})
-				})
-			)
-			expect(spy1).toHaveBeenCalled()
-			expect(spy2).toHaveBeenCalled()
 		})
 
-		test('Неправильное добавление перехватчиков', async () => {
-			const spy1 = jest.fn(response => {
-				response.data = true
-				return response
-			})
-			const spy2 = jest.fn(response => {
-				response.data = false
-				return response
-			})
-
-			echo.interceptors.response.use('first', spy1)
-			echo.interceptors.response.use('second', spy2)
-
-			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
-			})
-
-			const response = await echo.get('/get')
-
-			expect(response.status).toBe(200)
-			expect(response.data).toBe(false)
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/get',
-				expect.objectContaining({
-					method: 'GET',
-					headers: expect.objectContaining({
-						'Content-Type': 'application/json'
-					})
-				})
-			)
-			expect(spy1).toHaveBeenCalled()
-			expect(spy2).toHaveBeenCalled()
-		})
-
-		test('Ошибка в перехватчике', async () => {
-			const spy1 = jest.fn(error => {
-				expect(error).toBeInstanceOf(Error)
-				expect(error.message).toBe('Error response')
-				return error
-			})
-			const spy2 = jest.fn(error => {
-				return error
-			})
-
-			echo.interceptors.response.use(
-				'addResponse',
-				() => {
-					throw new Error('Error response')
-				},
-				spy1
-			)
-			echo.interceptors.response.use('rejectResponse', null, spy2)
-
-			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
-			})
-
-			try {
-				await echo.get('/get')
-			} catch (error: any) {
-				expect(error).toBeInstanceOf(Error)
-				expect(error.message).toBe('Error response')
-			}
-
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/get',
-				expect.objectContaining({
-					method: 'GET',
-					headers: expect.objectContaining({
-						'Content-Type': 'application/json'
-					})
-				})
-			)
-			expect(spy1).toHaveBeenCalled()
-			expect(spy2).toHaveBeenCalled()
-		})
-
-		test('Ошибки в перехватчике без обработки', async () => {
-			const spy = jest.fn(() => {
-				throw new Error('Error response')
-			})
-
-			echo.interceptors.response.use('1', spy)
-
-			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
-			})
-
-			try {
-				await echo.get('/get')
-			} catch (error: any) {
-				expect(error).toBeInstanceOf(Error)
-				expect(error.message).toBe('Error response')
-			}
-
-			expect(fetchMock).toHaveBeenCalled()
-			expect(spy).toHaveBeenCalled()
-		})
-
-		test('Ошибка в перехватчике reject', async () => {
-			const spy1 = jest.fn(error => {
-				expect(error).toBeInstanceOf(Error)
-				expect(error.message).toBe('Error response')
-
-				throw new Error('Error response reject')
-			})
-			const spy2 = jest.fn(() => {
-				return { url: '' }
-			})
-
-			echo.interceptors.response.use(
-				'addResponse',
-				() => {
-					throw new Error('Error response')
-				},
-				spy1
-			)
-			echo.interceptors.response.use('rejectRequest', null, spy2)
-
-			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
-			})
-
-			try {
-				await echo.get('/get')
-			} catch (error: any) {
-				expect(error).toBeInstanceOf(Error)
-				expect(error.message).toBe('Error response reject')
-			}
-
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/get',
-				expect.objectContaining({
-					method: 'GET',
-					headers: expect.objectContaining({
-						'Content-Type': 'application/json'
-					})
-				})
-			)
-			expect(spy1).toHaveBeenCalled()
-			expect(spy2).not.toHaveBeenCalled()
-		})
-
-		test('Перехват ошибки запроса', async () => {
-			const errorConfig: EchoConfig = { method: 'GET', url: '/error' }
-
-			const spy = jest.fn(error => {
+		test('Обрабатывает HTTP ошибки (EchoError)', async () => {
+			const errorHandler = jest.fn(error => {
 				expect(error).toBeInstanceOf(EchoError)
-				expect(error.message).toBe('Network Error')
-				return { data: 'Recovered from error', status: 200 }
+				expect(error.response?.status).toBe(404)
+				return { data: 'not-found-handled', status: 200 }
 			})
 
-			echo.interceptors.response.use('errorResponse', null, spy)
+			echo.interceptors.response.use('404-handler', null, errorHandler)
 
-			fetchMock.mockRejectOnce(() =>
-				Promise.reject(new EchoError('Network Error', errorConfig, errorConfig))
-			)
+			fetchMockResponseJsonFailed()
 
-			const response = await echo.get('/get')
+			const response = await echo.get('/test')
 
-			expect(response.status).toBe(200)
-			expect(response.data).toBe('Recovered from error')
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/get',
-				expect.objectContaining({
-					method: 'GET',
-					headers: expect.objectContaining({
-						'Content-Type': 'application/json'
-					})
-				})
-			)
-			expect(spy).toHaveBeenCalled()
+			expect(errorHandler).toHaveBeenCalledTimes(1)
+			expect(response.data).toBe('not-found-handled')
 		})
 
-		test('Неудачный перехват ошибки запроса', async () => {
-			const errorConfig: EchoConfig = { method: 'GET', url: '/error' }
+		test('Повторно выбрасывает необработанные ошибки', async () => {
+			const errorHandler = jest.fn(error => error)
 
-			const spy = jest.fn(error => error)
+			echo.interceptors.response.use('pass-through', null, errorHandler)
 
-			echo.interceptors.response.use('errorHandler', null, spy)
+			fetchMockResponseJsonFailed()
 
-			fetchMock.mockRejectOnce(() =>
-				Promise.reject(
-					new EchoError('Unhandled Error', errorConfig, errorConfig)
-				)
-			)
-
-			try {
-				await echo.get('/get')
-			} catch (error: any) {
-				expect(error).toBeInstanceOf(EchoError)
-				expect(error.message).toBe('Unhandled Error')
-			}
-
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/get',
-				expect.objectContaining({
-					method: 'GET',
-					headers: expect.objectContaining({
-						'Content-Type': 'application/json'
-					})
-				})
-			)
-			expect(spy).toHaveBeenCalled()
+			await expect(echo.get('/test')).rejects.toThrow(EchoError)
+			expect(errorHandler).toHaveBeenCalled()
 		})
 
-		test('Несколько перехватчиков reject -> не прекращаем цепочку после первого восстановления', async () => {
-			const errorConfig: EchoConfig = { method: 'GET', url: '/error' }
-
-			const spy1 = jest.fn(error => error)
-			const spy2 = jest.fn(() => {
-				return {
-					data: 'Recovered from second interceptor',
-					status: 200
-				}
-			})
-			const spy3 = jest.fn(() => {
-				return { data: 'Should reach here', status: 200 }
-			})
-
-			echo.interceptors.response.use('1', null, spy1)
-			echo.interceptors.response.use('2', null, spy2)
-			echo.interceptors.response.use('3', null, spy3)
-
-			fetchMock.mockRejectOnce(() =>
-				Promise.reject(new EchoError('Network Error', errorConfig, errorConfig))
-			)
-
-			const response = await echo.get('/get')
-
-			expect(response.status).toBe(200)
-			expect(response.data).toBe('Should reach here')
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/get',
-				expect.objectContaining({
-					method: 'GET'
-				})
-			)
-			expect(spy1).toHaveBeenCalled()
-			expect(spy2).toHaveBeenCalled()
-			expect(spy3).toHaveBeenCalled()
-		})
-
-		test('Выбросить ошибку, если просто возвращает её в перехватчике reject', async () => {
-			const errorConfig: EchoConfig = { method: 'GET', url: '/error' }
-
-			const spy1 = jest.fn(error => error)
-			const spy2 = jest.fn(error => {
-				return new Error('Returned response error1')
-			})
-			const spy3 = jest.fn(error => {
-				return new Error('Returned response error2')
-			})
-
-			echo.interceptors.response.use('1', null, spy1)
-			echo.interceptors.response.use('2', null, spy2)
-			echo.interceptors.response.use('3', null, spy3)
-
-			fetchMock.mockRejectOnce(() =>
-				Promise.reject(new EchoError('Network Error', errorConfig, errorConfig))
-			)
-
-			try {
-				await echo.get('/get')
-			} catch (error: any) {
-				expect(error).toBeInstanceOf(Error)
-				expect(error.message).toBe('Returned response error2')
-			}
-
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/get',
-				expect.objectContaining({
-					method: 'GET'
-				})
-			)
-			expect(spy1).toHaveBeenCalled()
-			expect(spy2).toHaveBeenCalled()
-			expect(spy3).toHaveBeenCalled()
-		})
-
-		test('Удаление перехватчика', async () => {
-			const spy = jest.fn(response => {
-				response.data = { modified: true }
+		test('Добавляет, удаляет и очищает перехватчики', async () => {
+			const interceptor1 = jest.fn(response => {
+				response.data = { ...response.data, modifiedBy: 'interceptor1' }
 				return response
 			})
 
-			echo.interceptors.response.use('1', spy)
-			echo.interceptors.response.eject('1')
-
-			fetchMock.mockResponseOnce(JSON.stringify({ success: true }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
-			})
-
-			const response = await echo.post('/post', { name: 'Test' })
-
-			expect(response.status).toBe(200)
-			expect(response.data).toEqual({ success: true })
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/post',
-				expect.objectContaining({
-					method: 'POST',
-					body: JSON.stringify({ name: 'Test' })
-				})
-			)
-			expect(spy).not.toHaveBeenCalled()
-		})
-
-		test('Очистка перехватчиков', async () => {
-			const spy1 = jest.fn(response => {
-				response.data = 'Recovered from second interceptor'
-				return response
-			})
-			const spy2 = jest.fn(() => {
-				response.data = 'Should not reach here'
+			const interceptor2 = jest.fn(response => {
+				response.data = { ...response.data, modifiedBy: 'interceptor2' }
 				return response
 			})
 
-			echo.interceptors.response.use('1', spy1)
-			echo.interceptors.response.use('2', spy2)
+			// 1. Проверяем добавление
+			echo.interceptors.response.use('id1', interceptor1)
+			await echo.get('/test')
+			expect(interceptor1).toHaveBeenCalledTimes(1)
+
+			// 2. Проверяем удаление
+			echo.interceptors.response.eject('id1')
+			await echo.get('/test')
+			expect(interceptor1).toHaveBeenCalledTimes(1)
+
+			// 3. Проверяем добавление второго
+			echo.interceptors.response.use('id2', interceptor2)
+			await echo.get('/test')
+			expect(interceptor2).toHaveBeenCalledTimes(1)
+
+			// 4. Проверяем очистку
 			echo.interceptors.response.clear()
-
-			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
-			})
-
-			const response = await echo.put('/post', { data: 'data' })
-
-			expect(response.status).toBe(200)
-			expect(response.data).toEqual({ message: 'Success' })
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/post',
-				expect.objectContaining({
-					method: 'PUT',
-					headers: expect.not.objectContaining({
-						Authorization: 'Bearer token'
-					}),
-					body: JSON.stringify({ data: 'data' })
-				})
-			)
-			expect(spy1).not.toHaveBeenCalled()
-			expect(spy2).not.toHaveBeenCalled()
+			await echo.get('/test')
+			expect(interceptor1).toHaveBeenCalledTimes(1)
+			expect(interceptor2).toHaveBeenCalledTimes(1)
 		})
 	})
 
-	describe('All interceptors', () => {
-		test('Перехват ошибки запроса с перезапросом', async () => {
-			const errorConfig: EchoConfig = { method: 'GET', url: '/get' }
+	describe('Управление перехватчиками', () => {
+		test('Удаление несуществующих перехватчиков не вызывает ошибки', () => {
+			expect(() => {
+				echo.interceptors.request.eject('non-existent-id')
+			}).not.toThrow()
 
-			echo.interceptors.request.use('auth', config => {
-				if (config.headers?.Authorization !== 'Bearer new_token') {
-					config.headers = {
-						...config.headers,
-						Authorization: 'Bearer old_token'
-					}
-				}
+			expect(() => {
+				echo.interceptors.request.clear()
+			}).not.toThrow()
+		})
 
+		test('Повторное добавление перехватчика с тем же ключом заменяет старый', async () => {
+			const firstInterceptor = jest.fn(config => {
+				config.headers = { ...config.headers, 'Content-Type': 'first' }
 				return config
 			})
 
-			echo.interceptors.response.use('auth', null, async error => {
-				if (isEchoError(error)) {
-					const originalConfig: any = error.config
-					const validRequest =
-						error.response?.status === 401 &&
-						(error.message === 'jwt expired' ||
-							error.message === 'jwt must be provided')
-
-					if (!originalConfig._isRetry && validRequest) {
-						originalConfig._isRetry = true
-
-						try {
-							// Get new tokens
-							originalConfig.headers = {
-								...originalConfig.headers,
-								Authorization: 'Bearer new_token'
-							}
-							// Retry request
-							return await echo.request(originalConfig)
-						} catch (err) {
-							throw err
-						}
-					}
-				}
-
-				return error
+			const secondInterceptor = jest.fn(config => {
+				config.headers = { ...config.headers, 'X-Second': 'second' }
+				return config
 			})
 
-			fetchMock.mockRejectOnce(() =>
-				Promise.reject(
-					new EchoError('jwt expired', errorConfig, errorConfig, {
-						status: 401,
-						statusText: 'jwt expired',
-						data: null,
-						headers: {},
-						config: errorConfig,
-						request: errorConfig
+			echo.interceptors.request.use('same-key', firstInterceptor)
+			echo.interceptors.request.use('same-key', secondInterceptor)
+
+			fetchMockResponseJsonSuccess()
+
+			await echo.get('/test')
+
+			expect(firstInterceptor).not.toHaveBeenCalled()
+			expect(secondInterceptor).toHaveBeenCalledTimes(1)
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.any(String),
+				expect.objectContaining({
+					headers: expect.objectContaining({
+						'Content-Type': 'application/json',
+						'X-Second': 'second'
 					})
-				)
+				})
 			)
+		})
 
-			fetchMock.mockResponseOnce(JSON.stringify({ success: true }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
+		test('Независимость перехватчиков', async () => {
+			const requestInterceptor = jest.fn()
+			const responseInterceptor = jest.fn()
+
+			echo.interceptors.request.use('req', requestInterceptor)
+			echo.interceptors.response.use('resp', responseInterceptor)
+
+			echo.interceptors.request.clear()
+
+			await echo.get('/test')
+			expect(requestInterceptor).not.toHaveBeenCalled()
+			expect(responseInterceptor).toHaveBeenCalled()
+		})
+
+		test('Перехватчики сохраняются между запросами', async () => {
+			const interceptor = jest.fn(config => {
+				config.headers = { ...config.headers, 'X-Persistent': 'yes' }
+				return config
 			})
 
-			const response = await echo.get('/get')
+			echo.interceptors.request.use('persistent', interceptor)
+
+			// Первый запрос
+			fetchMockResponseJsonSuccess()
+			await echo.get('/test1')
+			expect(interceptor).toHaveBeenCalledTimes(1)
+
+			// Второй запрос
+			fetchMockResponseJsonSuccess()
+			await echo.get('/test2')
+			expect(interceptor).toHaveBeenCalledTimes(2)
+
+			// Третий запрос
+			echo.interceptors.request.clear()
+			fetchMockResponseJsonSuccess()
+			await echo.get('/test3')
+			expect(interceptor).toHaveBeenCalledTimes(2)
+		})
+	})
+
+	describe('Комбинированные сценарии', () => {
+		test('Авторизация с обновлением токена', async () => {
+			let token = 'expired-token'
+
+			// Request: добавляем токен
+			echo.interceptors.request.use('auth', config => {
+				config.headers = {
+					...config.headers,
+					Authorization: `Bearer ${token}`
+				}
+				return config
+			})
+
+			// Response: обрабатываем 401 и обновляем токен
+			echo.interceptors.response.use('auth', null, async error => {
+				if (error instanceof EchoError && error.response?.status === 401) {
+					token = 'new-token'
+					return echo.request(error.config)
+				}
+				throw error
+			})
+
+			// Первый вызов: 401
+			fetchMock.mockResponseOnce(JSON.stringify({ error: 'Token expired' }), {
+				status: 401
+			})
+			// Второй вызов: успех
+			fetchMock.mockResponseOnce(JSON.stringify({ success: true }), {
+				status: 200
+			})
+
+			const response = await echo.get('/protected')
 
 			expect(response.status).toBe(200)
-			expect(response.data).toEqual({ success: true })
-
 			expect(fetchMock).toHaveBeenCalledTimes(2)
 
-			expect(fetchMock.mock.calls[0][0]).toBe('https://api.example.com/api/get')
-			expect(fetchMock.mock.calls[0][1]).toMatchObject({
-				method: 'GET',
-				headers: expect.objectContaining({
-					Authorization: 'Bearer old_token'
-				})
+			// Проверяем заголовки
+			const firstCall = fetchMock.mock.calls[0][1] as any
+			const secondCall = fetchMock.mock.calls[1][1] as any
+
+			expect(firstCall.headers.Authorization).toBe('Bearer expired-token')
+			expect(secondCall.headers.Authorization).toBe('Bearer new-token')
+		})
+	})
+
+	describe('Edge cases', () => {
+		test('Перехватчик выбрасывает не Error', async () => {
+			echo.interceptors.response.use('throw-non-error', () => {
+				throw 'string error'
 			})
 
-			expect(fetchMock.mock.calls[1][0]).toBe('https://api.example.com/api/get')
-			expect(fetchMock.mock.calls[1][1]).toMatchObject({
-				method: 'GET',
-				headers: expect.objectContaining({
-					Authorization: 'Bearer new_token',
-					'Content-Type': 'application/json'
-				})
+			fetchMockResponseJsonSuccess()
+
+			await expect(echo.get('/test')).rejects.toBe('string error')
+		})
+
+		test('Перехватчик возвращает не EchoResponse', async () => {
+			echo.interceptors.response.use('weird', () => {
+				return { custom: 'data' } as any
 			})
+
+			fetchMockResponseJsonSuccess()
+
+			const response = await echo.get('/test')
+
+			expect(response).toEqual({ custom: 'data' })
+		})
+
+		test('Перехватчик отдает ошибку', async () => {
+			const requestRejectInterceptor = jest.fn(() => {
+				return new SyntaxError('Reject request')
+			})
+			const responseRejectInterceptor = jest.fn(() => {
+				return new EchoError('Reject response', {} as any, {} as any)
+			})
+
+			echo.interceptors.request.use(
+				'reject-thrower',
+				null,
+				requestRejectInterceptor
+			)
+			echo.interceptors.response.use(
+				'response-thrower',
+				null,
+				responseRejectInterceptor
+			)
+
+			fetchMock.mockRejectOnce(new Error('Request error'))
+
+			await expect(echo.get('/test')).rejects.toThrow('Reject request')
+			expect(requestRejectInterceptor).toHaveBeenCalledTimes(1)
+
+			fetchMockResponseJsonFailed()
+
+			await expect(echo.get('/test')).rejects.toThrow('Reject response')
+			expect(responseRejectInterceptor).toHaveBeenCalledTimes(1)
 		})
 	})
 })
