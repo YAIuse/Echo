@@ -1,4 +1,4 @@
-# 📘 Changelog
+# Changelog
 
 All notable changes to this project are documented in this file.
 
@@ -10,35 +10,35 @@ This changelog follows the principles of **Keep a Changelog** and adheres to **S
 
 ### Added:
 
-- **New response parsing pipeline**:
+- New response parsing pipeline:
   - `parseByContentType` — automatic response parsing based on Content-Type.
   - `parseByResponseType` — explicit parsing via responseType.
-- **Extended returnResponseData logic with clearer separation of responsibilities**.
-- **New `errorMessage` utility for reusable error message generation**.
-- **Additional test coverage**:
+- Extended returnResponseData logic with clearer separation of responsibilities.
+- New `errorMessage` utility for reusable error message generation.
+- Additional test coverage:
   - `errorMessage` utility tests.
   - `buildParams` tests.
   - Extended client and echo tests.
 
 ### Changed:
 
-- **Updated type requestType**.
-- **Refactored utils API**:
+- Updated type requestType.
+- Refactored utils API:
   - Utilities are now exported as functions instead of arrow constants (`() => {} → function`).
-- **Updated and refactored existing tests for better structure and clarity**.
+- Updated and refactored existing tests for better structure and clarity.
 
 ### Fixed:
 
-- **Removed redundant internal try-catch logic in runRejected for echo**.
-- **Documentation updates and small fixes in README**.
+- Removed redundant internal try-catch logic in runRejected for echo.
+- Documentation updates and small fixes in README.
 
 ## **[0.1.0](https://github.com/YAIuse/Echo/releases/tag/v0.1.0)** (2025-12-06)
 
 ### Added:
 
-- **Core HTTP client built on top of the native `fetch` API**.
+- Core HTTP client built on top of the native `fetch` API.
 
-- **Echo client providing**:
+- Echo client providing:
   - Automatic URL construction (`baseURL`, `params`).
   - Intelligent body formatting.
   - Automatic removal of `Content-Type` for `FormData` and `Blob`.
@@ -48,31 +48,31 @@ This changelog follows the principles of **Keep a Changelog** and adheres to **S
   - Fully typed request and response models.
   - Built‑in `EchoError` with complete request/response context.
 
-- **Default echo instance for straightforward usage**.
+- Default echo instance for straightforward usage.
 
-- **Echo class with full interceptor support**:
+- Echo class with full interceptor support:
   - Request interceptors (`onFulfilled`, `onRejected`).
   - Response interceptors (`onFulfilled`, `onRejected`).
   - Interceptor management utilities: `use`, `eject`, `clear`.
 
-- **Utility functions**:
+- Utility functions:
   - `deepMerge`
   - `buildFullUrl`
   - `formattedBody`
 
-- **TypeScript architecture**:
+- TypeScript architecture:
   - Strict typings for configuration, requests, and responses.
   - Extendable interface definitions.
   - Helpful runtime type guard: `isEchoError`.
 
-- **Complete HTTP method support**:
+- Complete HTTP method support:
   - `get`, `post`, `put`, `patch`, `delete`, `request`.
 
-- **Consistent error propagation pipeline**:
+- Consistent error propagation pipeline:
   - Unified error structure across all layers.
   - Retry‑friendly response interceptor design.
 
-- **Initial documentation and usage examples**.
+- Initial documentation and usage examples.
 
 ---
 
