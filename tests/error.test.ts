@@ -1,5 +1,10 @@
-import { EchoError, isEchoError } from 'src/error'
-import type { EchoConfig, EchoRequest, EchoResponse } from 'src/types'
+import {
+	type EchoConfig,
+	EchoError,
+	type EchoRequest,
+	type EchoResponse,
+	isEchoError
+} from '../src'
 
 const mockConfig: EchoConfig = {
 	method: 'GET',

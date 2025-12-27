@@ -1,4 +1,4 @@
-import { formattedBody } from 'src/utils/formattedBody'
+import { formattedBody } from '../../src/utils/formattedBody'
 
 describe('formattedBody', () => {
 	test('Обрабатывать FormData', () => {

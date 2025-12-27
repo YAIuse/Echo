@@ -1,4 +1,4 @@
-import { deepMerge } from 'src/utils/deepMerge'
+import { deepMerge } from '../../src/utils/deepMerge'
 
 describe('deepMerge', () => {
 	test('объединяет два простых объекта', () => {

@@ -1,4 +1,4 @@
-import { buildParams } from 'src/utils/buildParams'
+import { buildParams } from '../../src/utils/buildParams'
 
 describe('buildParams', () => {
 	let url: string

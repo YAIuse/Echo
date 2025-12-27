@@ -1,4 +1,4 @@
-import { buildUrl } from 'src/utils/buildUrl'
+import { buildUrl } from '../../src/utils/buildUrl'
 
 describe('buildUrl', () => {
 	test('Объединяет URL', () => {

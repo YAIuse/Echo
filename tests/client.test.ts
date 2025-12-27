@@ -1,6 +1,6 @@
 import fetchMock from 'jest-fetch-mock'
-import { EchoClient } from 'src/client'
-import { EchoError } from 'src/error'
+
+import { EchoClient, EchoError } from '../src'
 
 fetchMock.enableMocks()
 

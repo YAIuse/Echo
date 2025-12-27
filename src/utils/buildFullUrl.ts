@@ -1,4 +1,4 @@
-import type { EchoSearchParams } from 'src/types'
+import type { EchoSearchParams } from '../types'
 
 import { buildParams } from './buildParams'
 import { buildUrl } from './buildUrl'

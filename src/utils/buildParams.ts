@@ -1,4 +1,4 @@
-import type { EchoSearchParams } from 'src/types'
+import type { EchoSearchParams } from '../types'
 
 export function buildParams(url: string, params?: EchoSearchParams): string {
 	if (!params || Object.keys(params).length === 0) return url

@@ -2,15 +2,14 @@
 	"compilerOptions": {
 		"target": "ESNext",
 		"module": "ESNext",
-		"moduleResolution": "node10",
-		"baseUrl": "./",
+		"moduleResolution": "bundler",
 		"strict": true,
 		"noEmit": true,
-		"skipLibCheck": true,
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"resolveJsonModule": true,
 		"isolatedModules": true,
+		"skipLibCheck": true,
 		"verbatimModuleSyntax": true
 	},
 	"include": ["**/*.ts"],
