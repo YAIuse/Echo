@@ -6,6 +6,28 @@ This changelog follows the principles of **Keep a Changelog** and adheres to **S
 
 ---
 
+## **[0.3.0](https://github.com/YAIuse/Echo/releases/tag/v0.3.0)** (2025-12-27)
+
+### Added:
+
+- Package json updates:
+  - Added `exports` field for proper ESM/CJS support.
+  - Added `sideEffects: false` for tree-shaking optimization.
+- TypeScript updates:
+  - `tsconfig.build.json` now sets `verbatimModuleSyntax: false` for better compatibility.
+  - `moduleResolution` updated to `bundler` for ESM-friendly resolution.
+
+### Changed:
+
+- Changing imports due to the removal of `baseUrl`.
+- Changing script `bundle` for the correct assembly of ESM/CJS.
+
+### Fixed:
+
+- Now all `.ts` files in src are included in the build, not just `index.ts`.
+
+---
+
 ## **[0.2.0](https://github.com/YAIuse/Echo/releases/tag/v0.2.0)** (2025-12-23)
 
 ### Added:
@@ -13,24 +35,26 @@ This changelog follows the principles of **Keep a Changelog** and adheres to **S
 - New response parsing pipeline:
   - `parseByContentType` — automatic response parsing based on Content-Type.
   - `parseByResponseType` — explicit parsing via responseType.
-- Extended returnResponseData logic with clearer separation of responsibilities.
+- Extended `returnResponseData` logic with clearer separation of responsibilities.
 - New `errorMessage` utility for reusable error message generation.
 - Additional test coverage:
   - `errorMessage` utility tests.
   - `buildParams` tests.
-  - Extended client and echo tests.
+  - Extended `client` and `echo` tests.
 
 ### Changed:
 
-- Updated type requestType.
+- Updated type `requestType`.
 - Refactored utils API:
   - Utilities are now exported as functions instead of arrow constants (`() => {} → function`).
 - Updated and refactored existing tests for better structure and clarity.
 
 ### Fixed:
 
-- Removed redundant internal try-catch logic in runRejected for echo.
+- Removed redundant internal `try-catch` logic in `runRejected` for Echo.
 - Documentation updates and small fixes in README.
+
+---
 
 ## **[0.1.0](https://github.com/YAIuse/Echo/releases/tag/v0.1.0)** (2025-12-06)
 
