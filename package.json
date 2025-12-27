@@ -7,19 +7,36 @@
 		"email": "help.yai.team@gmail.com",
 		"url": "https://github.com/YAIuse"
 	},
+	"contributors": [
+		"Zoltroa (https://github.com/zoltroa)"
+	],
 	"description": "An HTTP client built on fetch, offering an Axios-like experience with support for interceptors.",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/YAIuse/Echo"
 	},
+	"type": "module",
 	"main": "dist/index.cjs.js",
-	"module": "dist/index.esm.js",
+	"module": "dist/index.js",
 	"types": "dist/index.d.ts",
+	"sideEffects": false,
+	"exports": {
+		"./package.json": "./package.json",
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"require": "./dist/index.cjs.js",
+			"default": "./dist/index.js"
+		}
+	},
 	"scripts": {
+		"bundle:cjs": "esbuild dist/index.js --bundle --minify --platform=neutral --format=cjs --outfile=dist/index.cjs.js",
 		"prebuild": "rimraf dist",
-		"bundle": "esbuild dist/index.js --bundle --minify --platform=node --format=cjs --outfile=dist/index.cjs.js && esbuild dist/index.js --bundle --minify --platform=node --format=esm --outfile=dist/index.esm.js",
-		"build": "tsc --project tsconfig.build.json && bun run bundle",
+		"build": "tsc --project tsconfig.build.json && bun run bundle:cjs",
+		"postbuild": "bun run test:unit && bun run npm:check",
 		"test:unit": "jest --coverage",
+		"npm:check": "npm pack --dry-run",
+		"npm:publish": "bun run build && npm publish --access public",
 		"format": "prettier --write .",
 		"format:check": "prettier --check ."
 	},
@@ -58,9 +75,6 @@
 		"extensionsToTreatAsEsm": [
 			".ts"
 		]
-	},
-	"engines": {
-		"node": "24.12.0"
 	},
 	"keywords": [
 		"echo",
