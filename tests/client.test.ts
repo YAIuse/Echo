@@ -1,29 +1,24 @@
-import fetchMock from 'jest-fetch-mock'
+import { EchoClient, EchoError, isEchoError } from '../src'
 
-import { EchoClient, EchoError } from '../src'
+import {
+	fetchMock,
+	fetchMockCheckRequest,
+	fetchMockRequestNetworkError,
+	fetchMockResponseJsonFailed,
+	fetchMockResponseJsonSuccess
+} from './fetch-mock'
 
 fetchMock.enableMocks()
 
 describe('EchoClient', () => {
 	let client: EchoClient
 
-	const mockReqJson200 = {
-		status: 200,
-		headers: { 'Content-Type': 'application/json' }
-	}
-
-	const fetchMockResponseJsonSuccess = () =>
-		fetchMock.mockResponseOnce(
-			JSON.stringify({ message: 'Success' }),
-			mockReqJson200
-		)
-
 	beforeEach(() => {
+		fetchMock.resetMocks()
 		client = new EchoClient({
 			baseURL: 'https://api.example.com/api',
 			headers: { 'Content-Type': 'application/json' }
 		})
-		fetchMock.resetMocks()
 	})
 
 	afterEach(() => {
@@ -34,16 +29,120 @@ describe('EchoClient', () => {
 		expect(client).toBeDefined()
 	})
 
+	describe('Стандартизация', () => {
+		test('Отдача EchoResponse', async () => {
+			fetchMockResponseJsonSuccess()
+
+			const response = await client.get('/')
+			expect(response).toMatchObject({
+				data: expect.anything(),
+				status: expect.any(Number),
+				statusText: expect.any(String),
+				headers: expect.any(Object),
+				config: expect.objectContaining({
+					baseURL: expect.any(String),
+					headers: expect.any(Object),
+					method: expect.any(String),
+					url: expect.any(String)
+				}),
+				request: expect.objectContaining({
+					headers: expect.any(Object),
+					method: expect.any(String),
+					url: expect.any(String)
+				})
+			})
+
+			expect(response.data).toEqual({ ok: true })
+			expect(response.status).toBe(200)
+			expect(response.statusText).toBe('OK')
+			expect(response.headers).toEqual({
+				'content-type': 'application/json'
+			})
+			expect(response.config).toEqual({
+				baseURL: 'https://api.example.com/api',
+				headers: { 'Content-Type': 'application/json' },
+				method: 'GET',
+				url: '/'
+			})
+			expect(response.request).toEqual({
+				headers: { 'Content-Type': 'application/json' },
+				method: 'GET',
+				url: 'https://api.example.com/api'
+			})
+		})
+
+		test('Отдача EchoError', async () => {
+			fetchMockResponseJsonFailed()
+
+			try {
+				await client.get('/error-response')
+			} catch (err) {
+				expect(err).toBeInstanceOf(EchoError)
+				if (isEchoError(err)) {
+					expect(err.message).toEqual({ ok: false })
+					expect(err.config).toEqual({
+						baseURL: 'https://api.example.com/api',
+						headers: { 'Content-Type': 'application/json' },
+						method: 'GET',
+						url: '/error-response'
+					})
+					expect(err.request).toEqual({
+						headers: { 'Content-Type': 'application/json' },
+						method: 'GET',
+						url: 'https://api.example.com/api/error-response'
+					})
+					expect(err.response?.data).toEqual({ ok: false })
+					expect(err.response?.status).toBe(404)
+					expect(err.response?.statusText).toBe('Not Found')
+					expect(err.response?.headers).toEqual({
+						'content-type': 'application/json'
+					})
+					expect(err.response?.config).toEqual({
+						baseURL: 'https://api.example.com/api',
+						headers: { 'Content-Type': 'application/json' },
+						method: 'GET',
+						url: '/error-response'
+					})
+					expect(err.response?.request).toEqual({
+						headers: { 'Content-Type': 'application/json' },
+						method: 'GET',
+						url: 'https://api.example.com/api/error-response'
+					})
+				}
+			}
+
+			fetchMockRequestNetworkError()
+
+			try {
+				await client.get('/error')
+			} catch (err) {
+				expect(err).toBeInstanceOf(EchoError)
+				if (isEchoError(err)) {
+					expect(err.message).toEqual('Network Error')
+					expect(err.config).toEqual({
+						baseURL: 'https://api.example.com/api',
+						headers: { 'Content-Type': 'application/json' },
+						method: 'GET',
+						url: '/error'
+					})
+					expect(err.request).toEqual({
+						headers: { 'Content-Type': 'application/json' },
+						method: 'GET',
+						url: 'https://api.example.com/api/error'
+					})
+					expect(err.response).toBeUndefined()
+				}
+			}
+		})
+	})
+
 	describe('URL формирование', () => {
 		test('Формирует с baseURL и относительным путем', async () => {
 			fetchMockResponseJsonSuccess()
 
 			await client.get('/test')
 
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/test',
-				expect.any(Object)
-			)
+			fetchMockCheckRequest('https://api.example.com/api/test')
 		})
 
 		test('Формирует с абсолютным путем без baseURL', async () => {
@@ -51,10 +150,7 @@ describe('EchoClient', () => {
 
 			await client.get('https://example.ru/origin')
 
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://example.ru/origin',
-				expect.any(Object)
-			)
+			fetchMockCheckRequest('https://example.ru/origin')
 		})
 	})
 
@@ -64,10 +160,7 @@ describe('EchoClient', () => {
 
 			await client.get('/search', { params: { q: 'test' } })
 
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/search?q=test',
-				expect.any(Object)
-			)
+			fetchMockCheckRequest('https://api.example.com/api/search?q=test')
 		})
 
 		test('Кодирует специальные символы в query параметрах', async () => {
@@ -77,9 +170,8 @@ describe('EchoClient', () => {
 				params: { q: 'hello world', sort: 'desc' }
 			})
 
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/search?q=hello%20world&sort=desc',
-				expect.any(Object)
+			fetchMockCheckRequest(
+				'https://api.example.com/api/search?q=hello%20world&sort=desc'
 			)
 		})
 
@@ -88,9 +180,8 @@ describe('EchoClient', () => {
 
 			await client.get('/search', { params: { q: [2, 3], sort: 'desc' } })
 
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/search?q=2&q=3&sort=desc',
-				expect.any(Object)
+			fetchMockCheckRequest(
+				'https://api.example.com/api/search?q=2&q=3&sort=desc'
 			)
 		})
 
@@ -99,10 +190,7 @@ describe('EchoClient', () => {
 
 			await client.get('/search', { params: { test: null, value: undefined } })
 
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/search',
-				expect.any(Object)
-			)
+			fetchMockCheckRequest('https://api.example.com/api/search')
 		})
 	})
 
@@ -114,16 +202,13 @@ describe('EchoClient', () => {
 				const response = await client.get('/test')
 
 				expect(response.status).toBe(200)
-				expect(response.data).toEqual({ message: 'Success' })
-				expect(fetchMock).toHaveBeenCalledWith(
-					'https://api.example.com/api/test',
-					expect.objectContaining({
-						method: 'GET',
-						headers: expect.objectContaining({
-							'Content-Type': 'application/json'
-						})
+				expect(response.data).toEqual({ ok: true })
+				fetchMockCheckRequest('https://api.example.com/api/test', {
+					method: 'GET',
+					headers: expect.objectContaining({
+						'Content-Type': 'application/json'
 					})
-				)
+				})
 			})
 		})
 
@@ -134,17 +219,14 @@ describe('EchoClient', () => {
 				const response = await client.post('/json', { name: 'Test' })
 
 				expect(response.status).toBe(200)
-				expect(response.data).toEqual({ message: 'Success' })
-				expect(fetchMock).toHaveBeenCalledWith(
-					'https://api.example.com/api/json',
-					expect.objectContaining({
-						method: 'POST',
-						headers: expect.objectContaining({
-							'Content-Type': 'application/json'
-						}),
-						body: JSON.stringify({ name: 'Test' })
-					})
-				)
+				expect(response.data).toEqual({ ok: true })
+				fetchMockCheckRequest('https://api.example.com/api/json', {
+					method: 'POST',
+					headers: expect.objectContaining({
+						'Content-Type': 'application/json'
+					}),
+					body: JSON.stringify({ name: 'Test' })
+				})
 			})
 
 			test('Запрос с FormData', async () => {
@@ -156,15 +238,12 @@ describe('EchoClient', () => {
 				const response = await client.post('/formData', formData)
 
 				expect(response.status).toBe(200)
-				expect(response.data).toEqual({ message: 'Success' })
+				expect(response.data).toEqual({ ok: true })
 				expect(response.request?.headers?.['Content-Type']).toBeUndefined()
-				expect(fetchMock).toHaveBeenCalledWith(
-					'https://api.example.com/api/formData',
-					expect.objectContaining({
-						method: 'POST',
-						body: expect.any(FormData)
-					})
-				)
+				fetchMockCheckRequest('https://api.example.com/api/formData', {
+					method: 'POST',
+					body: expect.any(FormData)
+				})
 			})
 
 			test('Запрос с Blob', async () => {
@@ -175,15 +254,12 @@ describe('EchoClient', () => {
 				const response = await client.post('/blob', blob)
 
 				expect(response.status).toBe(200)
-				expect(response.data).toEqual({ message: 'Success' })
+				expect(response.data).toEqual({ ok: true })
 				expect(response.request?.headers?.['Content-Type']).toBeUndefined()
-				expect(fetchMock).toHaveBeenCalledWith(
-					'https://api.example.com/api/blob',
-					expect.objectContaining({
-						method: 'POST',
-						body: expect.any(Blob)
-					})
-				)
+				fetchMockCheckRequest('https://api.example.com/api/blob', {
+					method: 'POST',
+					body: expect.any(Blob)
+				})
 			})
 
 			test('Запрос с кастомными заголовками', async () => {
@@ -195,17 +271,14 @@ describe('EchoClient', () => {
 					{ headers: { 'X-Custom-Header': 'test-value' } }
 				)
 
-				expect(fetchMock).toHaveBeenCalledWith(
-					'https://api.example.com/api/custom-headers',
-					expect.objectContaining({
-						method: 'POST',
-						headers: expect.objectContaining({
-							'Content-Type': 'application/json',
-							'X-Custom-Header': 'test-value'
-						}),
-						body: JSON.stringify({ test: 123 })
-					})
-				)
+				fetchMockCheckRequest('https://api.example.com/api/custom-headers', {
+					method: 'POST',
+					headers: expect.objectContaining({
+						'Content-Type': 'application/json',
+						'X-Custom-Header': 'test-value'
+					}),
+					body: JSON.stringify({ test: 123 })
+				})
 			})
 		})
 
@@ -216,17 +289,14 @@ describe('EchoClient', () => {
 				const response = await client.put('/update', { name: 'Test' })
 
 				expect(response.status).toBe(200)
-				expect(response.data).toEqual({ message: 'Success' })
-				expect(fetchMock).toHaveBeenCalledWith(
-					'https://api.example.com/api/update',
-					expect.objectContaining({
-						method: 'PUT',
-						headers: expect.objectContaining({
-							'Content-Type': 'application/json'
-						}),
-						body: JSON.stringify({ name: 'Test' })
-					})
-				)
+				expect(response.data).toEqual({ ok: true })
+				fetchMockCheckRequest('https://api.example.com/api/update', {
+					method: 'PUT',
+					headers: expect.objectContaining({
+						'Content-Type': 'application/json'
+					}),
+					body: JSON.stringify({ name: 'Test' })
+				})
 			})
 		})
 
@@ -237,17 +307,14 @@ describe('EchoClient', () => {
 				const response = await client.patch('/patch', { name: 'Test' })
 
 				expect(response.status).toBe(200)
-				expect(response.data).toEqual({ message: 'Success' })
-				expect(fetchMock).toHaveBeenCalledWith(
-					'https://api.example.com/api/patch',
-					expect.objectContaining({
-						method: 'PATCH',
-						headers: expect.objectContaining({
-							'Content-Type': 'application/json'
-						}),
-						body: JSON.stringify({ name: 'Test' })
-					})
-				)
+				expect(response.data).toEqual({ ok: true })
+				fetchMockCheckRequest('https://api.example.com/api/patch', {
+					method: 'PATCH',
+					headers: expect.objectContaining({
+						'Content-Type': 'application/json'
+					}),
+					body: JSON.stringify({ name: 'Test' })
+				})
 			})
 		})
 
@@ -258,43 +325,40 @@ describe('EchoClient', () => {
 				const response = await client.delete('/delete')
 
 				expect(response.status).toBe(200)
-				expect(response.data).toEqual({ message: 'Success' })
-				expect(fetchMock).toHaveBeenCalledWith(
-					'https://api.example.com/api/delete',
-					expect.objectContaining({
-						method: 'DELETE',
-						headers: expect.objectContaining({
-							'Content-Type': 'application/json'
-						})
+				expect(response.data).toEqual({ ok: true })
+				fetchMockCheckRequest('https://api.example.com/api/delete', {
+					method: 'DELETE',
+					headers: expect.objectContaining({
+						'Content-Type': 'application/json'
 					})
-				)
+				})
 			})
 		})
 	})
 
 	describe('Обработка Content-Type и Response Type', () => {
 		describe('Определение (по Content-Type)', () => {
-			test('JSON ответ', async () => {
-				fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
+			test('JSON ответ c application/json', async () => {
+				fetchMock.mockResponseOnce(JSON.stringify({ ok: true }), {
 					headers: { 'Content-Type': 'application/json' }
 				})
 
 				const response = await client.get('/json')
 
-				expect(response.data).toEqual({ message: 'Success' })
+				expect(response.data).toEqual({ ok: true })
 			})
 
-			test('JSON ответ с content-type +json', async () => {
-				fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }), {
+			test('JSON ответ с +json', async () => {
+				fetchMock.mockResponseOnce(JSON.stringify({ ok: true }), {
 					headers: { 'Content-Type': 'application/vnd.api+json' }
 				})
 
 				const response = await client.get('/json-vnd')
 
-				expect(response.data).toEqual({ message: 'Success' })
+				expect(response.data).toEqual({ ok: true })
 			})
 
-			test('XML ответ', async () => {
+			test('XML ответ c application/xml', async () => {
 				const xmlString = '<?xml version="1.0"?><root>test</root>'
 				fetchMock.mockResponseOnce(xmlString, {
 					headers: { 'Content-Type': 'application/xml' }
@@ -305,7 +369,7 @@ describe('EchoClient', () => {
 				expect(response.data).toBe(xmlString)
 			})
 
-			test('XML ответ с content-type text/xml', async () => {
+			test('XML ответ с text/xml', async () => {
 				const xmlString = '<?xml version="1.0"?><root>test</root>'
 				fetchMock.mockResponseOnce(xmlString, {
 					headers: { 'Content-Type': 'text/xml' }
@@ -316,7 +380,7 @@ describe('EchoClient', () => {
 				expect(response.data).toBe(xmlString)
 			})
 
-			test('XML ответ с content-type application/xhtml+xml', async () => {
+			test('XML ответ с application/xhtml+xml', async () => {
 				const xmlString = '<?xml version="1.0"?><html><body>test</body></html>'
 				fetchMock.mockResponseOnce(xmlString, {
 					headers: { 'Content-Type': 'application/xhtml+xml' }
@@ -327,7 +391,7 @@ describe('EchoClient', () => {
 				expect(response.data).toBe(xmlString)
 			})
 
-			test('XML ответ с content-type заканчивающимся на +xml', async () => {
+			test('XML ответ с +xml', async () => {
 				const xmlString = '<?xml version="1.0"?><svg>test</svg>'
 				fetchMock.mockResponseOnce(xmlString, {
 					headers: { 'Content-Type': 'image/svg+xml' }
@@ -338,7 +402,7 @@ describe('EchoClient', () => {
 				expect(response.data).toBe(xmlString)
 			})
 
-			test('Text ответ', async () => {
+			test('Text ответ с text/plain', async () => {
 				fetchMock.mockResponseOnce('Success', {
 					headers: { 'Content-Type': 'text/plain' }
 				})
@@ -569,38 +633,84 @@ describe('EchoClient', () => {
 	})
 
 	describe('Обработка ошибок', () => {
-		test('HTTP ошибки (4xx, 5xx)', async () => {
-			fetchMock.mockResponseOnce(JSON.stringify({ error: 'Not Found' }), {
+		test('Ошибки запроса', async () => {
+			fetchMock.mockRejectOnce(() => Promise.reject(new Error('Network Error')))
+
+			try {
+				await client.get('/error')
+			} catch (err: any) {
+				expect(err).toBeInstanceOf(EchoError)
+				if (isEchoError(err)) {
+					expect(err.message).toBe('Network Error')
+					expect(err.request).toBeDefined()
+					expect(err.response).toBeUndefined()
+				}
+			}
+
+			fetchMockCheckRequest()
+		})
+
+		test('Ошибки ответа', async () => {
+			fetchMock.mockResponseOnce('Not Found', {
 				status: 404,
 				statusText: 'Not Found'
 			})
 
-			await expect(client.get('/missing')).rejects.toThrow(EchoError)
-
 			try {
-				await client.get('/missing')
-			} catch (error: any) {
-				expect(error.request.method).toBe('GET')
-				expect(error.response?.status).toBe(404)
-				expect(error.response?.data).toEqual({ error: 'Not Found' })
+				await client.get('/error')
+			} catch (err: any) {
+				expect(err).toBeInstanceOf(EchoError)
+				if (isEchoError(err)) {
+					expect(err.message).toBe('Not Found')
+					expect(err.request).toBeDefined()
+					expect(err.response?.status).toBe(404)
+					expect(err.response?.data).toBe('Not Found')
+				}
 			}
+
+			fetchMockCheckRequest()
 		})
 
-		test('HTTP ошибка без massage но с statusText', async () => {
+		test('Ошибка без massage но с statusText', async () => {
 			fetchMock.mockResponseOnce('', {
 				status: 404,
 				statusText: 'Not Found'
 			})
 
-			await client.get('/error').catch((error: EchoError) => {
-				expect(error.message).toBe('Not Found')
-			})
+			try {
+				await client.get('/error')
+			} catch (err: any) {
+				expect(err).toBeInstanceOf(EchoError)
+				if (isEchoError(err)) {
+					expect(err.message).toBe('Not Found')
+					expect(err.request).toBeDefined()
+					expect(err.response?.status).toBe(404)
+					expect(err.response?.statusText).toBe('Not Found')
+				}
+			}
+
+			fetchMockCheckRequest()
 		})
 
-		test('Сетевые ошибки', async () => {
-			fetchMock.mockRejectOnce(() => Promise.reject(new Error('Request Error')))
+		test('Ошибка без massage, status и statusText', async () => {
+			fetchMock.mockResponseOnce('', {
+				status: undefined,
+				statusText: undefined
+			})
 
-			await expect(client.get('/error')).rejects.toThrow(EchoError)
+			try {
+				await client.get('/error')
+			} catch (err: any) {
+				expect(err).toBeInstanceOf(EchoError)
+				if (isEchoError(err)) {
+					expect(err.message).toBe('Unexpected error')
+					expect(err.request).toBeDefined()
+					expect(err.response?.status).toBe(404)
+					expect(err.response?.statusText).toBe('Not Found')
+				}
+			}
+
+			fetchMockCheckRequest()
 		})
 	})
 })
