@@ -13,7 +13,7 @@
 [![npm Downloads](https://img.shields.io/npm/dm/@yaiuse/echo?color=green&logo=npm)](https://www.npmjs.com/package/@yaiuse/echo)
 [![Install Size](https://img.shields.io/badge/dynamic/json?url=https://packagephobia.com/v2/api.json?p=@yaiuse/echo&query=$.install.pretty&label=install%20size&style=flat-square)](https://packagephobia.com/result?p=@yaiuse/echo)
 [![Bundle Size](https://img.shields.io/bundlephobia/minzip/@yaiuse/echo?color=purple&logo=webpack)](https://bundlephobia.com/package/@yaiuse/echo@latest)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/yaiuse/Echo/tests.yaml?branch=main&logo=githubactions)](https://github.com/yaiuse/Echo/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/yaiuse/Echo/tests.yml?branch=main&logo=githubactions)](https://github.com/yaiuse/Echo/actions)
 [![Coverage Status](https://codecov.io/gh/yaiuse/Echo/branch/main/graph/badge.svg)](https://app.codecov.io/gh/yaiuse/Echo)
 [![Snyk Security](https://snyk.io/test/npm/@yaiuse/echo/badge.svg)](https://snyk.io/test/npm/@yaiuse/echo)
 [![License](https://img.shields.io/github/license/yaiuse/Echo?color=green)](https://github.com/yaiuse/Echo/blob/main/LICENSE)
