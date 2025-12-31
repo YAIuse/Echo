@@ -31,10 +31,10 @@
 	},
 	"scripts": {
 		"bundle:cjs": "esbuild dist/index.js --bundle --minify --platform=neutral --format=cjs --outfile=dist/index.cjs.js",
+		"test:unit": "jest --coverage",
 		"prebuild": "rimraf dist",
 		"build": "tsc --project tsconfig.build.json && bun run bundle:cjs",
-		"postbuild": "bun run test:unit && bun run npm:check",
-		"test:unit": "jest --coverage",
+		"postbuild": "bun run test:unit",
 		"npm:check": "npm pack --dry-run",
 		"npm:publish": "bun run build && npm publish --access public",
 		"format": "prettier --write .",
