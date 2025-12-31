@@ -1,0 +1,22 @@
+name: Publish
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup common
+        uses: ./.github/actions/common-setup
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Publish package
+        run: bun run npm:publish
