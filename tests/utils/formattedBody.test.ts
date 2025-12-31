@@ -26,7 +26,7 @@ describe('formattedBody', () => {
 		expect(result).toBe('123')
 	})
 
-	test('Сериализовать объекты в JSON', () => {
+	test('Cериализовать объекты в JSON', () => {
 		const body = { key: 'value' }
 
 		const result = formattedBody(body)
