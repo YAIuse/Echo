@@ -52,7 +52,7 @@ export type EchoConfig = Omit<RequestInit, 'method' | 'headers' | 'body'> & {
 	body?: any
 	duplex?: 'half' | 'full'
 }
-export type EchoCreateConfig = Omit<EchoConfig, 'url' | 'method'>
+export type EchoCreateConfig = Omit<EchoConfig, 'url' | 'method' | 'body'>
 
 // ----Request
 
