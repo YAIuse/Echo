@@ -1,5 +1,5 @@
-import { EchoClient } from './client'
-import { isEchoError } from './error'
+import { EchoClient, EchoMethods } from './client'
+import { EchoError, isEchoError } from './error'
 import type {
 	EchoConfig,
 	EchoCreateConfig,
@@ -9,20 +9,20 @@ import type {
 	EchoResponseInterceptors
 } from './types'
 import { deepMerge } from './utils/deepMerge'
+import { errorMessage } from './utils/errorMessage'
 
 export type EchoInstance = ReturnType<Echo['create']>
 
 export class Echo extends EchoClient {
-	create(createConfig: EchoCreateConfig = {}) {
-		const requestInterceptors: EchoRequestInterceptors = new Map()
-		const responseInterceptors: EchoResponseInterceptors = new Map()
+	create = (createConfig: EchoCreateConfig = {}) => {
+		const requestINTS: EchoRequestInterceptors = new Map()
+		const responseINTS: EchoResponseInterceptors = new Map()
 
 		const runFulfilled = async <T>(
 			type: EchoInterceptors,
 			input: T
 		): Promise<T> => {
-			const interceptors =
-				type === 'request' ? requestInterceptors : responseInterceptors
+			const interceptors = type === 'request' ? requestINTS : responseINTS
 
 			for (const [_, { onFulfilled }] of interceptors) {
 				if (!onFulfilled) continue
@@ -35,8 +35,7 @@ export class Echo extends EchoClient {
 			type: EchoInterceptors,
 			input: any
 		): Promise<any> => {
-			const interceptors =
-				type === 'request' ? requestInterceptors : responseInterceptors
+			const interceptors = type === 'request' ? requestINTS : responseINTS
 
 			let isHandled = false
 
@@ -51,30 +50,33 @@ export class Echo extends EchoClient {
 				}
 			}
 
-			if (isEchoError(input) || input instanceof Error) {
-				throw input
-			}
+			if (!isHandled || input instanceof Error) throw input
 
-			return isHandled ? input : Promise.reject(input)
+			return input
 		}
 
 		const request = async <T>(
 			configure: EchoConfig
 		): Promise<EchoResponse<T>> => {
-			const interceptedRequest = await runFulfilled<EchoConfig>(
+			const config = deepMerge(createConfig, configure)
+			const intsConfig = await runFulfilled<EchoConfig>(
 				'request',
-				deepMerge(createConfig, configure)
+				config
 			).catch(async error => {
 				return await runRejected('request', error)
 			})
 
-			const { request } = this.configurator(interceptedRequest)
-			const response = await this.fetch<T>(configure, request).catch(
-				async error => {
-					if (!isEchoError(error)) return await runRejected('request', error)
-					return await runRejected('response', error)
-				}
-			)
+			const request = this.configurator(intsConfig)
+
+			const response = await this.fetch<T>(config, request).catch(async err => {
+				if (isEchoError(err)) return await runRejected('response', err)
+				const requestError = new EchoError(
+					errorMessage(err.message),
+					config,
+					request
+				)
+				return await runRejected('request', requestError)
+			})
 
 			return await runFulfilled<EchoResponse<T>>('response', response).catch(
 				async error => {
@@ -83,9 +85,10 @@ export class Echo extends EchoClient {
 			)
 		}
 
+		const methods = new EchoMethods(request)
+
 		return {
-			request,
-			...this.methods(request),
+			...methods,
 			interceptors: {
 				request: {
 					use: (
@@ -95,13 +98,13 @@ export class Echo extends EchoClient {
 							| null,
 						onRejected?: null | ((error: any) => any)
 					) => {
-						requestInterceptors.set(key, {
+						requestINTS.set(key, {
 							onFulfilled,
 							onRejected
 						})
 					},
-					eject: (key: string) => requestInterceptors.delete(key),
-					clear: () => requestInterceptors.clear()
+					eject: (key: string) => requestINTS.delete(key),
+					clear: () => requestINTS.clear()
 				},
 				response: {
 					use: (
@@ -111,13 +114,13 @@ export class Echo extends EchoClient {
 							| ((value: EchoResponse) => EchoResponse | Promise<EchoResponse>),
 						onRejected?: null | ((error: any) => any)
 					) => {
-						responseInterceptors.set(key, {
+						responseINTS.set(key, {
 							onFulfilled,
 							onRejected
 						})
 					},
-					eject: (key: string) => responseInterceptors.delete(key),
-					clear: () => responseInterceptors.clear()
+					eject: (key: string) => responseINTS.delete(key),
+					clear: () => responseINTS.clear()
 				}
 			}
 		}

@@ -1,36 +1,23 @@
-import fetchMock from 'jest-fetch-mock'
+import { Echo, EchoError, type EchoInstance, isEchoError } from '../src'
 
-import { Echo, EchoError, type EchoInstance } from '../src'
+import {
+	fetchMock,
+	fetchMockCheckRequest,
+	fetchMockRequestNetworkError,
+	fetchMockResponseJsonFailed,
+	fetchMockResponseJsonSuccess
+} from './fetch-mock'
 
 fetchMock.enableMocks()
 
 describe('Echo', () => {
 	let echo: EchoInstance
 
-	const baseConfig = {
-		baseURL: 'https://api.example.com/api',
-		headers: { 'Content-Type': 'application/json' }
-	}
-
-	const mockReqJson = (status: number) => ({
-		status,
-		headers: { 'Content-Type': 'application/json' }
-	})
-
-	const fetchMockResponseJsonSuccess = () =>
-		fetchMock.mockResponseOnce(
-			JSON.stringify({ success: true }),
-			mockReqJson(200)
-		)
-
-	const fetchMockResponseJsonFailed = () =>
-		fetchMock.mockResponseOnce(
-			JSON.stringify({ error: true }),
-			mockReqJson(404)
-		)
-
 	beforeEach(() => {
-		echo = new Echo().create(baseConfig)
+		echo = new Echo().create({
+			baseURL: 'https://api.example.com/api',
+			headers: { 'Content-Type': 'application/json' }
+		})
 		fetchMock.resetMocks()
 	})
 
@@ -41,9 +28,6 @@ describe('Echo', () => {
 	describe('Инициализация', () => {
 		test('Создает экземпляр', () => {
 			expect(echo).toBeDefined()
-			expect(typeof echo.request).toBe('function')
-			expect(typeof echo.get).toBe('function')
-			expect(echo.interceptors).toBeDefined()
 		})
 
 		test('Создает новый независимый экземпляр', () => {
@@ -51,38 +35,142 @@ describe('Echo', () => {
 			const instance1 = echoFull.create()
 			const instance2 = echoFull.create()
 
-			expect(instance1).not.toBe(instance2)
 			expect(instance1.interceptors).not.toBe(instance2.interceptors)
+		})
+	})
+
+	describe('Стандартизация', () => {
+		test('Отдача EchoResponse', async () => {
+			fetchMockResponseJsonSuccess()
+
+			const response = await echo.get('/')
+			expect(response).toMatchObject({
+				data: expect.anything(),
+				status: expect.any(Number),
+				statusText: expect.any(String),
+				headers: expect.any(Object),
+				config: expect.objectContaining({
+					baseURL: expect.any(String),
+					headers: expect.any(Object),
+					method: expect.any(String),
+					url: expect.any(String)
+				}),
+				request: expect.objectContaining({
+					headers: expect.any(Object),
+					method: expect.any(String),
+					url: expect.any(String)
+				})
+			})
+
+			expect(response.data).toEqual({ ok: true })
+			expect(response.status).toBe(200)
+			expect(response.statusText).toBe('OK')
+			expect(response.headers).toEqual({
+				'content-type': 'application/json'
+			})
+			expect(response.config).toEqual({
+				baseURL: 'https://api.example.com/api',
+				headers: { 'Content-Type': 'application/json' },
+				method: 'GET',
+				url: '/'
+			})
+			expect(response.request).toEqual({
+				headers: { 'Content-Type': 'application/json' },
+				method: 'GET',
+				url: 'https://api.example.com/api'
+			})
+		})
+
+		test('Отдача EchoError', async () => {
+			fetchMockResponseJsonFailed()
+
+			try {
+				await echo.get('/error-response')
+			} catch (err) {
+				expect(err).toBeInstanceOf(EchoError)
+				if (isEchoError(err)) {
+					expect(err.message).toEqual({ ok: false })
+					expect(err.config).toEqual({
+						baseURL: 'https://api.example.com/api',
+						headers: { 'Content-Type': 'application/json' },
+						method: 'GET',
+						url: '/error-response'
+					})
+					expect(err.request).toEqual({
+						headers: { 'Content-Type': 'application/json' },
+						method: 'GET',
+						url: 'https://api.example.com/api/error-response'
+					})
+					expect(err.response?.data).toEqual({ ok: false })
+					expect(err.response?.status).toBe(404)
+					expect(err.response?.statusText).toBe('Not Found')
+					expect(err.response?.headers).toEqual({
+						'content-type': 'application/json'
+					})
+					expect(err.response?.config).toEqual({
+						baseURL: 'https://api.example.com/api',
+						headers: { 'Content-Type': 'application/json' },
+						method: 'GET',
+						url: '/error-response'
+					})
+					expect(err.response?.request).toEqual({
+						headers: { 'Content-Type': 'application/json' },
+						method: 'GET',
+						url: 'https://api.example.com/api/error-response'
+					})
+				}
+			}
+
+			fetchMockRequestNetworkError()
+
+			try {
+				await echo.get('/error-request')
+			} catch (err) {
+				expect(err).toBeInstanceOf(EchoError)
+				if (isEchoError(err)) {
+					expect(err.message).toEqual('Network Error')
+					expect(err.config).toEqual({
+						baseURL: 'https://api.example.com/api',
+						headers: { 'Content-Type': 'application/json' },
+						method: 'GET',
+						url: '/error-request'
+					})
+					expect(err.request).toEqual({
+						headers: { 'Content-Type': 'application/json' },
+						method: 'GET',
+						url: 'https://api.example.com/api/error-request'
+					})
+					expect(err.response).toBeUndefined()
+				}
+			}
 		})
 	})
 
 	describe('Request Interceptors', () => {
 		test('Модифицирует конфигурацию запроса', async () => {
+			fetchMockResponseJsonSuccess()
+
 			const requestHandler = jest.fn(config => {
 				config.headers = { ...config.headers, 'X-Custom': 'value' }
 				return config
 			})
 
 			echo.interceptors.request.use('test', requestHandler)
-			fetchMock.mockResponseOnce(JSON.stringify({ success: true }), {
-				status: 200
-			})
 
 			await echo.get('/test')
 
 			expect(requestHandler).toHaveBeenCalled()
-			expect(fetchMock).toHaveBeenCalledWith(
-				'https://api.example.com/api/test',
-				expect.objectContaining({
-					headers: expect.objectContaining({
-						'Content-Type': 'application/json',
-						'X-Custom': 'value'
-					})
+			fetchMockCheckRequest('https://api.example.com/api/test', {
+				headers: expect.objectContaining({
+					'Content-Type': 'application/json',
+					'X-Custom': 'value'
 				})
-			)
+			})
 		})
 
 		test('Цепочка перехватчиков выполняется последовательно', async () => {
+			fetchMockResponseJsonSuccess()
+
 			const calls: string[] = []
 
 			echo.interceptors.request.use('first', config => {
@@ -97,22 +185,16 @@ describe('Echo', () => {
 				return config
 			})
 
-			fetchMock.mockResponseOnce(JSON.stringify({ success: true }), {
-				status: 200
-			})
 			await echo.get('/test')
 
 			expect(calls).toEqual(['first', 'second'])
-			expect(fetchMock).toHaveBeenCalledWith(
-				expect.any(String),
-				expect.objectContaining({
-					headers: expect.objectContaining({
-						'Content-Type': 'application/json',
-						'X-First': '1',
-						'X-Second': '2'
-					})
+			fetchMockCheckRequest(undefined, {
+				headers: expect.objectContaining({
+					'Content-Type': 'application/json',
+					'X-First': '1',
+					'X-Second': '2'
 				})
-			)
+			})
 		})
 
 		test('Обрабатывает ошибки в цепочке fulfilled', async () => {
@@ -124,7 +206,7 @@ describe('Echo', () => {
 			echo.interceptors.request.use(
 				'error-thrower',
 				() => {
-					throw new Error('Test error')
+					throw new Error('Request error')
 				},
 				errorHandler
 			)
@@ -137,13 +219,14 @@ describe('Echo', () => {
 		})
 
 		test('Перехватывает сетевые ошибки в reject цепочке', async () => {
+			fetchMockRequestNetworkError()
+
 			const errorHandler = jest.fn(error => {
-				expect(error.message).toBe('Network error')
+				expect(error.message).toBe('Network Error')
 				return { data: 'recovered', status: 200 }
 			})
 
 			echo.interceptors.request.use('network-handler', null, errorHandler)
-			fetchMock.mockRejectOnce(new Error('Network error'))
 
 			const response = await echo.get('/test')
 
@@ -152,6 +235,8 @@ describe('Echo', () => {
 		})
 
 		test('Не перехватывает EchoError в request interceptors (они идут в response)', async () => {
+			fetchMockResponseJsonFailed()
+
 			const requestHandler = jest.fn()
 			const responseHandler = jest.fn(error => {
 				expect(error).toBeInstanceOf(EchoError)
@@ -161,8 +246,6 @@ describe('Echo', () => {
 			echo.interceptors.request.use('req', null, requestHandler)
 			echo.interceptors.response.use('resp', null, responseHandler)
 
-			fetchMockResponseJsonFailed()
-
 			const response = await echo.get('/test')
 
 			expect(requestHandler).not.toHaveBeenCalled()
@@ -171,6 +254,8 @@ describe('Echo', () => {
 		})
 
 		test('Добавляет, удаляет и очищает перехватчики', async () => {
+			fetchMockResponseJsonSuccess()
+
 			const interceptor1 = jest.fn(config => {
 				config.headers = { ...config.headers, 'X-Interceptor1': 'value1' }
 				return config
@@ -206,21 +291,24 @@ describe('Echo', () => {
 
 	describe('Response Interceptors', () => {
 		test('Модифицирует ответ', async () => {
+			fetchMockResponseJsonSuccess()
+
 			const responseHandler = jest.fn(response => {
 				response.data = { ...response.data, modified: true }
 				return response
 			})
 
 			echo.interceptors.response.use('modifier', responseHandler)
-			fetchMockResponseJsonSuccess()
 
 			const response = await echo.get('/test')
 
 			expect(responseHandler).toHaveBeenCalledTimes(1)
-			expect(response.data).toEqual({ success: true, modified: true })
+			expect(response.data).toEqual({ ok: true, modified: true })
 		})
 
 		test('Цепочка response перехватчиков', async () => {
+			fetchMockResponseJsonSuccess()
+
 			const calls: string[] = []
 
 			echo.interceptors.response.use('first', response => {
@@ -235,19 +323,19 @@ describe('Echo', () => {
 				return response
 			})
 
-			fetchMockResponseJsonSuccess()
-
 			const response = await echo.get('/test')
 
 			expect(calls).toEqual(['first', 'second'])
 			expect(response.data).toEqual({
-				success: true,
+				ok: true,
 				first: true,
 				second: true
 			})
 		})
 
 		test('Обрабатывает HTTP ошибки (EchoError)', async () => {
+			fetchMockResponseJsonFailed()
+
 			const errorHandler = jest.fn(error => {
 				expect(error).toBeInstanceOf(EchoError)
 				expect(error.response?.status).toBe(404)
@@ -256,8 +344,6 @@ describe('Echo', () => {
 
 			echo.interceptors.response.use('404-handler', null, errorHandler)
 
-			fetchMockResponseJsonFailed()
-
 			const response = await echo.get('/test')
 
 			expect(errorHandler).toHaveBeenCalledTimes(1)
@@ -265,17 +351,19 @@ describe('Echo', () => {
 		})
 
 		test('Повторно выбрасывает необработанные ошибки', async () => {
+			fetchMockResponseJsonFailed()
+
 			const errorHandler = jest.fn(error => error)
 
 			echo.interceptors.response.use('pass-through', null, errorHandler)
-
-			fetchMockResponseJsonFailed()
 
 			await expect(echo.get('/test')).rejects.toThrow(EchoError)
 			expect(errorHandler).toHaveBeenCalled()
 		})
 
 		test('Добавляет, удаляет и очищает перехватчики', async () => {
+			fetchMockResponseJsonSuccess()
+
 			const interceptor1 = jest.fn(response => {
 				response.data = { ...response.data, modifiedBy: 'interceptor1' }
 				return response
@@ -321,6 +409,8 @@ describe('Echo', () => {
 		})
 
 		test('Повторное добавление перехватчика с тем же ключом заменяет старый', async () => {
+			fetchMockResponseJsonSuccess()
+
 			const firstInterceptor = jest.fn(config => {
 				config.headers = { ...config.headers, 'Content-Type': 'first' }
 				return config
@@ -334,24 +424,21 @@ describe('Echo', () => {
 			echo.interceptors.request.use('same-key', firstInterceptor)
 			echo.interceptors.request.use('same-key', secondInterceptor)
 
-			fetchMockResponseJsonSuccess()
-
 			await echo.get('/test')
 
 			expect(firstInterceptor).not.toHaveBeenCalled()
 			expect(secondInterceptor).toHaveBeenCalledTimes(1)
-			expect(fetchMock).toHaveBeenCalledWith(
-				expect.any(String),
-				expect.objectContaining({
-					headers: expect.objectContaining({
-						'Content-Type': 'application/json',
-						'X-Second': 'second'
-					})
+			fetchMockCheckRequest(undefined, {
+				headers: expect.objectContaining({
+					'Content-Type': 'application/json',
+					'X-Second': 'second'
 				})
-			)
+			})
 		})
 
 		test('Независимость перехватчиков', async () => {
+			fetchMockResponseJsonSuccess()
+
 			const requestInterceptor = jest.fn()
 			const responseInterceptor = jest.fn()
 
@@ -366,6 +453,8 @@ describe('Echo', () => {
 		})
 
 		test('Перехватчики сохраняются между запросами', async () => {
+			fetchMockResponseJsonSuccess()
+
 			const interceptor = jest.fn(config => {
 				config.headers = { ...config.headers, 'X-Persistent': 'yes' }
 				return config
@@ -374,18 +463,15 @@ describe('Echo', () => {
 			echo.interceptors.request.use('persistent', interceptor)
 
 			// Первый запрос
-			fetchMockResponseJsonSuccess()
 			await echo.get('/test1')
 			expect(interceptor).toHaveBeenCalledTimes(1)
 
 			// Второй запрос
-			fetchMockResponseJsonSuccess()
 			await echo.get('/test2')
 			expect(interceptor).toHaveBeenCalledTimes(2)
 
 			// Третий запрос
 			echo.interceptors.request.clear()
-			fetchMockResponseJsonSuccess()
 			await echo.get('/test3')
 			expect(interceptor).toHaveBeenCalledTimes(2)
 		})
@@ -418,7 +504,7 @@ describe('Echo', () => {
 				status: 401
 			})
 			// Второй вызов: успех
-			fetchMock.mockResponseOnce(JSON.stringify({ success: true }), {
+			fetchMock.mockResponseOnce(JSON.stringify({ ok: true }), {
 				status: 200
 			})
 
@@ -468,7 +554,7 @@ describe('Echo', () => {
 			})
 
 			echo.interceptors.request.use(
-				'reject-thrower',
+				'request-thrower',
 				null,
 				requestRejectInterceptor
 			)
@@ -478,7 +564,7 @@ describe('Echo', () => {
 				responseRejectInterceptor
 			)
 
-			fetchMock.mockRejectOnce(new Error('Request error'))
+			fetchMockRequestNetworkError()
 
 			await expect(echo.get('/test')).rejects.toThrow('Reject request')
 			expect(requestRejectInterceptor).toHaveBeenCalledTimes(1)
