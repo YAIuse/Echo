@@ -6,6 +6,26 @@ This changelog follows the principles of **Keep a Changelog** and adheres to **S
 
 ---
 
+## **[0.4.0](https://github.com/YAIuse/Echo/releases/tag/v0.4.0)** (2026-01-01)
+
+### Changed:
+
+- Test coverage improvements across client and core logic.
+- URL & params building:
+  - `buildUrl` and `buildParams` logic merged into a single flow.
+  - `buildFullUrl` renamed to `buildUrl` (tests updated accordingly).
+- Refactored `Echo` client.
+- Updated `EchoCreateConfig` type.
+- Improved `deepMerge` implementation:
+  - Removed redundant object cloning.
+- Updated project dependencies and scripts.
+
+### Fixed:
+
+- Incorrect error output in `Echo` instance for request errors.
+
+---
+
 ## **[0.3.0](https://github.com/YAIuse/Echo/releases/tag/v0.3.0)** (2025-12-27)
 
 ### Added:
@@ -34,7 +54,7 @@ This changelog follows the principles of **Keep a Changelog** and adheres to **S
 
 - New response parsing pipeline:
   - `parseByContentType` — automatic response parsing based on Content-Type.
-  - `parseByResponseType` — explicit parsing via responseType.
+  - `parseByResponseType` — explicit parsing via `responseType`.
 - Extended `returnResponseData` logic with clearer separation of responsibilities.
 - New `errorMessage` utility for reusable error message generation.
 - Additional test coverage:
@@ -52,7 +72,7 @@ This changelog follows the principles of **Keep a Changelog** and adheres to **S
 ### Fixed:
 
 - Removed redundant internal `try-catch` logic in `runRejected` for Echo.
-- Documentation updates and small fixes in README.
+- Documentation updates and small fixes in `README`.
 
 ---
 
