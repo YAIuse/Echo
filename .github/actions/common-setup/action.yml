@@ -1,5 +1,4 @@
 name: 'Common Setup'
-description: 'Checkout repo, install Node.js and Bun, cache dependencies'
 
 inputs:
   node-version:
