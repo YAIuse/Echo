@@ -1,17 +1,11 @@
-type PlainObject = Record<string, any>
+type PlainObject = Record<string, unknown>
 
-type IsPlainObject<T> = T extends object
-	? T extends Function | Date | Map<any, any> | Set<any> | FormData | any[]
-		? false
-		: true
-	: false
-
-type DeepMergeResult<T, S> = {
+type DeepMerge<T, S> = {
 	[K in keyof T | keyof S]: K extends keyof S
 		? K extends keyof T
-			? IsPlainObject<T[K]> extends true
-				? IsPlainObject<S[K]> extends true
-					? DeepMergeResult<T[K], S[K]>
+			? T[K] extends PlainObject
+				? S[K] extends PlainObject
+					? DeepMerge<T[K], S[K]>
 					: S[K]
 				: S[K]
 			: S[K]
@@ -20,37 +14,25 @@ type DeepMergeResult<T, S> = {
 			: never
 }
 
-const isPlainObject = (value: any): value is PlainObject =>
-	Object.prototype.toString.call(value) === '[object Object]'
+const isPlainObject = (value: unknown): value is PlainObject => {
+	if (value === null || typeof value !== 'object') return false
+	const proto = Object.getPrototypeOf(value)
+	return proto === Object.prototype || proto === null
+}
 
 const clone = <T>(value: T): T => {
-	if (value instanceof Date) {
-		return new Date(value.getTime()) as T
-	} else if (Array.isArray(value)) {
-		return value.map(clone) as any
-	} else if (value instanceof Map) {
-		return new Map([...value].map(([k, v]) => [k, clone(v)])) as T
-	} else if (value instanceof Set) {
-		return new Set([...value].map(clone)) as T
-	} else if (typeof FormData !== 'undefined' && value instanceof FormData) {
-		const fd = new FormData()
-		for (const [k, v] of value.entries()) {
-			fd.append(k, v)
-		}
-		return fd as T
-	} else if (isPlainObject(value)) {
+	if (isPlainObject(value)) {
 		return Object.fromEntries(
 			Object.entries(value).map(([k, v]) => [k, clone(v)])
 		) as T
-	} else {
-		return value
 	}
+	return value
 }
 
 export function deepMerge<T extends PlainObject, S extends PlainObject>(
 	target: T,
 	source: S
-): DeepMergeResult<T, S> {
+): DeepMerge<T, S> {
 	const result = clone<PlainObject>(target)
 
 	for (const [key, srcValue] of Object.entries(source)) {
@@ -58,7 +40,7 @@ export function deepMerge<T extends PlainObject, S extends PlainObject>(
 		result[key] =
 			isPlainObject(tgtValue) && isPlainObject(srcValue)
 				? deepMerge(tgtValue, srcValue)
-				: clone(srcValue)
+				: srcValue
 	}
-	return result as DeepMergeResult<T, S>
+	return result as DeepMerge<T, S>
 }
