@@ -1,5 +1,10 @@
 import { EchoError } from './error'
-import type { EchoConfig, EchoRequest, EchoResponse } from './types'
+import type {
+	EchoConfig,
+	EchoRequest,
+	EchoResponse,
+	EchoResponseType
+} from './types'
 import { buildUrl } from './utils/buildUrl'
 import { errorMessage } from './utils/errorMessage'
 import { formattedBody } from './utils/formattedBody'
@@ -36,7 +41,10 @@ export class EchoFetch {
 		}
 	}
 
-	private parseByResponseType = async (responseType: string, res: Response) => {
+	private parseByResponseType = async (
+		responseType: EchoResponseType,
+		res: Response
+	) => {
 		switch (responseType) {
 			case 'json':
 				return await res.json()
@@ -58,19 +66,17 @@ export class EchoFetch {
 	}
 
 	private returnResponseData = async (req: EchoRequest, res: Response) => {
-		if (!req.responseType) {
-			return await this.parseByContentType(res)
-		}
+		if (!req.responseType) return await this.parseByContentType(res)
 
 		try {
 			return await this.parseByResponseType(req.responseType, res)
 		} catch (err) {
-			if (err instanceof Error && err.name === 'SyntaxError') {
-				throw err
-			}
+			if (err instanceof SyntaxError && err.name === 'SyntaxError') throw err
+
 			console.warn(
 				`Failed to parse response as ${req.responseType}, falling back to automatic parsing.`
 			)
+
 			return await this.parseByContentType(res)
 		}
 	}
@@ -87,7 +93,10 @@ export class EchoFetch {
 			...(body && { body: formattedBody(body) })
 		}
 
-		if (request.headers && (body instanceof FormData || body instanceof Blob)) {
+		if (
+			request.headers &&
+			(request.body instanceof FormData || request.body instanceof Blob)
+		) {
 			delete request.headers?.['Content-Type']
 		}
 
@@ -102,7 +111,7 @@ export class EchoFetch {
 		const data = await this.returnResponseData(request, fetchResponse)
 		const { ok, status, statusText, headers } = fetchResponse
 
-		const response: EchoResponse = {
+		const response: EchoResponse<T> = {
 			data,
 			status,
 			statusText,
