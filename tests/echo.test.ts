@@ -144,6 +144,25 @@ describe('Echo', () => {
 				}
 			}
 		})
+
+		test('Не перехватывает EchoError в request interceptors (они идут в response)', async () => {
+			fetchMockResponseJsonFailed()
+
+			const requestHandler = jest.fn()
+			const responseHandler = jest.fn(error => {
+				expect(error).toBeInstanceOf(EchoError)
+				return { data: 'handled-in-response', status: 200 }
+			})
+
+			echo.interceptors.request.use('req', null, requestHandler)
+			echo.interceptors.response.use('resp', null, responseHandler)
+
+			const response = await echo.get('/test')
+
+			expect(requestHandler).not.toHaveBeenCalled()
+			expect(responseHandler).toHaveBeenCalled()
+			expect(response.data).toBe('handled-in-response')
+		})
 	})
 
 	describe('Request Interceptors', () => {
@@ -168,7 +187,7 @@ describe('Echo', () => {
 			})
 		})
 
-		test('Цепочка перехватчиков выполняется последовательно', async () => {
+		test('Выполнение цепочки перехватчиков', async () => {
 			fetchMockResponseJsonSuccess()
 
 			const calls: string[] = []
@@ -197,6 +216,43 @@ describe('Echo', () => {
 			})
 		})
 
+		test('Перехватывает ошибки', async () => {
+			fetchMockRequestNetworkError()
+
+			const errorHandler = jest.fn(error => {
+				expect(error.message).toBe('Network Error')
+				return { data: 'recovered', status: 200 }
+			})
+
+			echo.interceptors.request.use('network-handler', null, errorHandler)
+
+			const response = await echo.get('/test')
+
+			expect(errorHandler).toHaveBeenCalled()
+			expect(response.data).toBe('recovered')
+		})
+
+		test('Перехватывает несколько ошибок', async () => {
+			fetchMockRequestNetworkError()
+
+			const errorHandler1 = jest.fn(error => error)
+			const errorHandler2 = jest.fn(error => {
+				expect(error).toBeInstanceOf(Error)
+				return { data: 'handled', status: 200 }
+			})
+
+			echo.interceptors.request.use('error1', null, errorHandler1)
+			echo.interceptors.request.use('error2', null, errorHandler2)
+
+			const response = await echo.get('/test')
+
+			expect(errorHandler1).toHaveBeenCalled()
+			expect(errorHandler2).toHaveBeenCalled()
+
+			expect(response.data).toBe('handled')
+			expect(response.status).toBe(200)
+		})
+
 		test('Обрабатывает ошибки в цепочке fulfilled', async () => {
 			const errorHandler = jest.fn(error => {
 				expect(error).toBeInstanceOf(Error)
@@ -218,39 +274,15 @@ describe('Echo', () => {
 			expect(response.status).toBe(200)
 		})
 
-		test('Перехватывает сетевые ошибки в reject цепочке', async () => {
+		test('Повторно выбрасывает необработанные ошибки', async () => {
 			fetchMockRequestNetworkError()
 
-			const errorHandler = jest.fn(error => {
-				expect(error.message).toBe('Network Error')
-				return { data: 'recovered', status: 200 }
-			})
+			const errorHandler = jest.fn(error => error)
 
-			echo.interceptors.request.use('network-handler', null, errorHandler)
+			echo.interceptors.request.use('pass-through', null, errorHandler)
 
-			const response = await echo.get('/test')
-
+			await expect(echo.get('/test')).rejects.toThrow(EchoError)
 			expect(errorHandler).toHaveBeenCalled()
-			expect(response.data).toBe('recovered')
-		})
-
-		test('Не перехватывает EchoError в request interceptors (они идут в response)', async () => {
-			fetchMockResponseJsonFailed()
-
-			const requestHandler = jest.fn()
-			const responseHandler = jest.fn(error => {
-				expect(error).toBeInstanceOf(EchoError)
-				return { data: 'handled-in-response', status: 200 }
-			})
-
-			echo.interceptors.request.use('req', null, requestHandler)
-			echo.interceptors.response.use('resp', null, responseHandler)
-
-			const response = await echo.get('/test')
-
-			expect(requestHandler).not.toHaveBeenCalled()
-			expect(responseHandler).toHaveBeenCalled()
-			expect(response.data).toBe('handled-in-response')
 		})
 
 		test('Добавляет, удаляет и очищает перехватчики', async () => {
@@ -306,7 +338,7 @@ describe('Echo', () => {
 			expect(response.data).toEqual({ ok: true, modified: true })
 		})
 
-		test('Цепочка response перехватчиков', async () => {
+		test('Выполнение цепочки перехватчиков', async () => {
 			fetchMockResponseJsonSuccess()
 
 			const calls: string[] = []
@@ -333,7 +365,7 @@ describe('Echo', () => {
 			})
 		})
 
-		test('Обрабатывает HTTP ошибки (EchoError)', async () => {
+		test('Перехватывает ошибки', async () => {
 			fetchMockResponseJsonFailed()
 
 			const errorHandler = jest.fn(error => {
@@ -348,6 +380,47 @@ describe('Echo', () => {
 
 			expect(errorHandler).toHaveBeenCalledTimes(1)
 			expect(response.data).toBe('not-found-handled')
+		})
+
+		test('Перехватывает несколько ошибок', async () => {
+			fetchMockResponseJsonFailed()
+
+			const errorHandler1 = jest.fn(error => error)
+			const errorHandler2 = jest.fn(error => {
+				expect(error).toBeInstanceOf(EchoError)
+				expect(error.response?.status).toBe(404)
+				return { data: 'not-found-handled', status: 200 }
+			})
+
+			echo.interceptors.response.use('handler1', null, errorHandler1)
+			echo.interceptors.response.use('handler2', null, errorHandler2)
+
+			const response = await echo.get('/test')
+
+			expect(errorHandler1).toHaveBeenCalledTimes(1)
+			expect(errorHandler2).toHaveBeenCalledTimes(1)
+			expect(response.data).toBe('not-found-handled')
+		})
+
+		test('Обрабатывает ошибки в цепочке fulfilled', async () => {
+			const errorHandler = jest.fn(error => {
+				expect(error).toBeInstanceOf(Error)
+				return { data: 'handled', status: 200 }
+			})
+
+			echo.interceptors.response.use(
+				'error-thrower',
+				() => {
+					throw new Error('Response error')
+				},
+				errorHandler
+			)
+
+			const response = await echo.get('/test')
+
+			expect(errorHandler).toHaveBeenCalled()
+			expect(response.data).toBe('handled')
+			expect(response.status).toBe(200)
 		})
 
 		test('Повторно выбрасывает необработанные ошибки', async () => {
@@ -545,12 +618,12 @@ describe('Echo', () => {
 			expect(response).toEqual({ custom: 'data' })
 		})
 
-		test('Перехватчик отдает ошибку', async () => {
+		test('Перехватчики отдают ошибку', async () => {
 			const requestRejectInterceptor = jest.fn(() => {
 				return new SyntaxError('Reject request')
 			})
 			const responseRejectInterceptor = jest.fn(() => {
-				return new EchoError('Reject response', {} as any, {} as any)
+				return new SyntaxError('Reject response')
 			})
 
 			echo.interceptors.request.use(
