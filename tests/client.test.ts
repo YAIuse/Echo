@@ -25,12 +25,12 @@ describe('EchoClient', () => {
 		fetchMock.resetMocks()
 	})
 
-	test('Инициализация', () => {
+	test('Initialization', () => {
 		expect(client).toBeDefined()
 	})
 
-	describe('Стандартизация', () => {
-		test('Отдача EchoResponse', async () => {
+	describe('Standardization', () => {
+		test('EchoResponse output', async () => {
 			fetchMockResponseJsonSuccess()
 
 			const response = await client.get('/')
@@ -71,7 +71,7 @@ describe('EchoClient', () => {
 			})
 		})
 
-		test('Отдача EchoError', async () => {
+		test('EchoError output', async () => {
 			fetchMockResponseJsonFailed()
 
 			try {
@@ -136,8 +136,8 @@ describe('EchoClient', () => {
 		})
 	})
 
-	describe('URL формирование', () => {
-		test('Формирует с baseURL и относительным путем', async () => {
+	describe('URL formation', () => {
+		test('Generates with baseUrl and relative path', async () => {
 			fetchMockResponseJsonSuccess()
 
 			await client.get('/test')
@@ -145,7 +145,7 @@ describe('EchoClient', () => {
 			fetchMockCheckRequest('https://api.example.com/api/test')
 		})
 
-		test('Формирует с абсолютным путем без baseURL', async () => {
+		test('Generates with an absolute path without baseUrl', async () => {
 			fetchMockResponseJsonSuccess()
 
 			await client.get('https://example.ru/origin')
@@ -154,8 +154,8 @@ describe('EchoClient', () => {
 		})
 	})
 
-	describe('Query параметры', () => {
-		test('Добавляет query параметры в URL', async () => {
+	describe('Query params', () => {
+		test('Adds query params to the URL', async () => {
 			fetchMockResponseJsonSuccess()
 
 			await client.get('/search', { params: { q: 'test' } })
@@ -163,7 +163,7 @@ describe('EchoClient', () => {
 			fetchMockCheckRequest('https://api.example.com/api/search?q=test')
 		})
 
-		test('Кодирует специальные символы в query параметрах', async () => {
+		test('Encodes special characters in query parameters', async () => {
 			fetchMockResponseJsonSuccess()
 
 			await client.get('/search', {
@@ -175,7 +175,7 @@ describe('EchoClient', () => {
 			)
 		})
 
-		test('Обрабатывает массивы в query параметрах', async () => {
+		test('Processes arrays in query params', async () => {
 			fetchMockResponseJsonSuccess()
 
 			await client.get('/search', { params: { q: [2, 3], sort: 'desc' } })
@@ -185,7 +185,7 @@ describe('EchoClient', () => {
 			)
 		})
 
-		test('Игнорирует null и undefined значения в query параметрах', async () => {
+		test('Ignores null and undefined values in query params', async () => {
 			fetchMockResponseJsonSuccess()
 
 			await client.get('/search', { params: { test: null, value: undefined } })
@@ -194,9 +194,9 @@ describe('EchoClient', () => {
 		})
 	})
 
-	describe('HTTP методы', () => {
+	describe('HTTP methods', () => {
 		describe('GET', () => {
-			test('Запрос', async () => {
+			test('Request', async () => {
 				fetchMockResponseJsonSuccess()
 
 				const response = await client.get('/test')
@@ -213,7 +213,7 @@ describe('EchoClient', () => {
 		})
 
 		describe('POST', () => {
-			test('Запрос с JSON', async () => {
+			test('Request with JSON', async () => {
 				fetchMockResponseJsonSuccess()
 
 				const response = await client.post('/json', { name: 'Test' })
@@ -229,7 +229,7 @@ describe('EchoClient', () => {
 				})
 			})
 
-			test('Запрос с FormData', async () => {
+			test('Request with FormData', async () => {
 				fetchMockResponseJsonSuccess()
 
 				const formData = new FormData()
@@ -246,7 +246,7 @@ describe('EchoClient', () => {
 				})
 			})
 
-			test('Запрос с Blob', async () => {
+			test('Request from Blob', async () => {
 				fetchMockResponseJsonSuccess()
 
 				const blob = new Blob()
@@ -262,7 +262,7 @@ describe('EchoClient', () => {
 				})
 			})
 
-			test('Запрос с кастомными заголовками', async () => {
+			test('Request with custom headers', async () => {
 				fetchMockResponseJsonSuccess()
 
 				await client.post(
@@ -283,7 +283,7 @@ describe('EchoClient', () => {
 		})
 
 		describe('PUT', () => {
-			test('Запрос', async () => {
+			test('Request', async () => {
 				fetchMockResponseJsonSuccess()
 
 				const response = await client.put('/update', { name: 'Test' })
@@ -301,7 +301,7 @@ describe('EchoClient', () => {
 		})
 
 		describe('PATCH', () => {
-			test('Запрос', async () => {
+			test('Request', async () => {
 				fetchMockResponseJsonSuccess()
 
 				const response = await client.patch('/patch', { name: 'Test' })
@@ -319,7 +319,7 @@ describe('EchoClient', () => {
 		})
 
 		describe('DELETE', () => {
-			test('Запрос', async () => {
+			test('Request', async () => {
 				fetchMockResponseJsonSuccess()
 
 				const response = await client.delete('/delete')
@@ -336,9 +336,9 @@ describe('EchoClient', () => {
 		})
 	})
 
-	describe('Обработка Content-Type и Response Type', () => {
-		describe('Определение (по Content-Type)', () => {
-			test('JSON ответ c application/json', async () => {
+	describe('Content-Type and Response Type processing', () => {
+		describe('Definition (by Content-Type)', () => {
+			test('JSON response from application/json', async () => {
 				fetchMock.mockResponseOnce(JSON.stringify({ ok: true }), {
 					headers: { 'Content-Type': 'application/json' }
 				})
@@ -348,7 +348,7 @@ describe('EchoClient', () => {
 				expect(response.data).toEqual({ ok: true })
 			})
 
-			test('JSON ответ с +json', async () => {
+			test('JSON response with +json', async () => {
 				fetchMock.mockResponseOnce(JSON.stringify({ ok: true }), {
 					headers: { 'Content-Type': 'application/vnd.api+json' }
 				})
@@ -358,7 +358,7 @@ describe('EchoClient', () => {
 				expect(response.data).toEqual({ ok: true })
 			})
 
-			test('XML ответ c application/xml', async () => {
+			test('XML response application/xml', async () => {
 				const xmlString = '<?xml version="1.0"?><root>test</root>'
 				fetchMock.mockResponseOnce(xmlString, {
 					headers: { 'Content-Type': 'application/xml' }
@@ -369,7 +369,7 @@ describe('EchoClient', () => {
 				expect(response.data).toBe(xmlString)
 			})
 
-			test('XML ответ с text/xml', async () => {
+			test('XML response text/xml', async () => {
 				const xmlString = '<?xml version="1.0"?><root>test</root>'
 				fetchMock.mockResponseOnce(xmlString, {
 					headers: { 'Content-Type': 'text/xml' }
@@ -380,7 +380,7 @@ describe('EchoClient', () => {
 				expect(response.data).toBe(xmlString)
 			})
 
-			test('XML ответ с application/xhtml+xml', async () => {
+			test('XML response application/xhtml+xml', async () => {
 				const xmlString = '<?xml version="1.0"?><html><body>test</body></html>'
 				fetchMock.mockResponseOnce(xmlString, {
 					headers: { 'Content-Type': 'application/xhtml+xml' }
@@ -391,7 +391,7 @@ describe('EchoClient', () => {
 				expect(response.data).toBe(xmlString)
 			})
 
-			test('XML ответ с +xml', async () => {
+			test('XML response +xml', async () => {
 				const xmlString = '<?xml version="1.0"?><svg>test</svg>'
 				fetchMock.mockResponseOnce(xmlString, {
 					headers: { 'Content-Type': 'image/svg+xml' }
@@ -402,7 +402,7 @@ describe('EchoClient', () => {
 				expect(response.data).toBe(xmlString)
 			})
 
-			test('Text ответ с text/plain', async () => {
+			test('Text response text/plain', async () => {
 				fetchMock.mockResponseOnce('Success', {
 					headers: { 'Content-Type': 'text/plain' }
 				})
@@ -412,7 +412,7 @@ describe('EchoClient', () => {
 				expect(response.data).toBe('Success')
 			})
 
-			test('FormData ответ с multipart/form-data', async () => {
+			test('FormData response multipart/form-data', async () => {
 				const mockFormData = new FormData()
 				mockFormData.append('key', 'value')
 
@@ -429,7 +429,7 @@ describe('EchoClient', () => {
 				expect((response.data as FormData).get('key')).toBe('value')
 			})
 
-			test('FormData ответ с application/x-www-form-urlencoded', async () => {
+			test('FormData response application/x-www-form-urlencoded', async () => {
 				const mockFormData = new FormData()
 				mockFormData.append('key', 'value')
 
@@ -448,7 +448,7 @@ describe('EchoClient', () => {
 				expect((response.data as FormData).get('key')).toBe('value')
 			})
 
-			test('Blob ответ для неизвестного content-type', async () => {
+			test('Blob response for unknown content-type', async () => {
 				const blob = new Blob(['binary data'])
 
 				fetchMock.mockImplementationOnce(() =>
@@ -460,7 +460,7 @@ describe('EchoClient', () => {
 				expect(response.data?.constructor.name).toBe('Blob')
 			})
 
-			test('Пустой ответ (204)', async () => {
+			test('Empty answer (204)', async () => {
 				fetchMock.mockResponseOnce('', {
 					status: 204,
 					headers: { 'Content-Type': 'application/json' }
@@ -472,7 +472,7 @@ describe('EchoClient', () => {
 				expect(response.data).toBeNull()
 			})
 
-			test('Возвращает null при ошибке обработки', async () => {
+			test('Returns null in case of a processing error', async () => {
 				const mockResponse = new Response('invalid json', {
 					status: 200,
 					headers: { 'Content-Type': 'application/json' }
@@ -488,7 +488,7 @@ describe('EchoClient', () => {
 			})
 		})
 
-		describe('Указание responseType', () => {
+		describe('Specifying the responseType', () => {
 			test('Json', async () => {
 				fetchMock.mockResponseOnce(JSON.stringify({ message: 'Success' }))
 
@@ -603,7 +603,7 @@ describe('EchoClient', () => {
 				expect(response.data).toBeInstanceOf(Response)
 			})
 
-			test('Fallback на автоматическую обработку при ошибке', async () => {
+			test('Fallback to automatic error handling', async () => {
 				const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation()
 				const mockResponse = new Response('not a json', {
 					headers: { 'Content-Type': 'text/plain' }
@@ -622,7 +622,7 @@ describe('EchoClient', () => {
 				consoleWarnSpy.mockRestore()
 			})
 
-			test('Выбрасывает ошибку при неправильном responseType', async () => {
+			test('Throws an error when the responseType is incorrect', async () => {
 				fetchMock.mockResponseOnce('', { status: 200 })
 
 				await expect(
@@ -632,8 +632,8 @@ describe('EchoClient', () => {
 		})
 	})
 
-	describe('Обработка ошибок', () => {
-		test('Ошибки запроса', async () => {
+	describe('Error handling', () => {
+		test('Request errors', async () => {
 			fetchMock.mockRejectOnce(() => Promise.reject(new Error('Network Error')))
 
 			try {
@@ -650,7 +650,7 @@ describe('EchoClient', () => {
 			fetchMockCheckRequest()
 		})
 
-		test('Ошибки ответа', async () => {
+		test('Response errors', async () => {
 			fetchMock.mockResponseOnce('Not Found', {
 				status: 404,
 				statusText: 'Not Found'
@@ -671,7 +671,7 @@ describe('EchoClient', () => {
 			fetchMockCheckRequest()
 		})
 
-		test('Ошибка без massage но с statusText', async () => {
+		test('Error without massage but with statusText', async () => {
 			fetchMock.mockResponseOnce('', {
 				status: 404,
 				statusText: 'Not Found'
@@ -692,7 +692,7 @@ describe('EchoClient', () => {
 			fetchMockCheckRequest()
 		})
 
-		test('Ошибка без massage, status и statusText', async () => {
+		test('Error without massage, status and statusText', async () => {
 			fetchMock.mockResponseOnce('', {
 				status: undefined,
 				statusText: undefined

@@ -25,12 +25,12 @@ describe('Echo', () => {
 		fetchMock.resetMocks()
 	})
 
-	describe('Инициализация', () => {
-		test('Создает экземпляр', () => {
+	describe('Initialization', () => {
+		test('Creates an instance', () => {
 			expect(echo).toBeDefined()
 		})
 
-		test('Создает новый независимый экземпляр', () => {
+		test('Creates a new independent instance', () => {
 			const echoFull = new Echo()
 			const instance1 = echoFull.create()
 			const instance2 = echoFull.create()
@@ -39,8 +39,8 @@ describe('Echo', () => {
 		})
 	})
 
-	describe('Стандартизация', () => {
-		test('Отдача EchoResponse', async () => {
+	describe('Standardization', () => {
+		test('EchoResponse output', async () => {
 			fetchMockResponseJsonSuccess()
 
 			const response = await echo.get('/')
@@ -81,7 +81,7 @@ describe('Echo', () => {
 			})
 		})
 
-		test('Отдача EchoError', async () => {
+		test('EchoError output', async () => {
 			fetchMockResponseJsonFailed()
 
 			try {
@@ -145,7 +145,7 @@ describe('Echo', () => {
 			}
 		})
 
-		test('Не перехватывает EchoError в request interceptors (они идут в response)', async () => {
+		test('Does not intercept EchoError in request interceptors (they go to response)', async () => {
 			fetchMockResponseJsonFailed()
 
 			const requestHandler = jest.fn()
@@ -187,7 +187,7 @@ describe('Echo', () => {
 			})
 		})
 
-		test('Выполнение цепочки перехватчиков', async () => {
+		test('Executing a chain of interceptors', async () => {
 			fetchMockResponseJsonSuccess()
 
 			const calls: string[] = []
@@ -216,7 +216,7 @@ describe('Echo', () => {
 			})
 		})
 
-		test('Перехватывает ошибки', async () => {
+		test('Intercepts errors', async () => {
 			fetchMockRequestNetworkError()
 
 			const errorHandler = jest.fn(error => {
@@ -232,7 +232,7 @@ describe('Echo', () => {
 			expect(response.data).toBe('recovered')
 		})
 
-		test('Перехватывает несколько ошибок', async () => {
+		test('Intercepts several errors', async () => {
 			fetchMockRequestNetworkError()
 
 			const errorHandler1 = jest.fn(error => error)
@@ -253,7 +253,7 @@ describe('Echo', () => {
 			expect(response.status).toBe(200)
 		})
 
-		test('Обрабатывает ошибки в цепочке fulfilled', async () => {
+		test('Handles errors in the fulfilled chain', async () => {
 			const errorHandler = jest.fn(error => {
 				expect(error).toBeInstanceOf(Error)
 				return { data: 'handled', status: 200 }
@@ -274,7 +274,7 @@ describe('Echo', () => {
 			expect(response.status).toBe(200)
 		})
 
-		test('Повторно выбрасывает необработанные ошибки', async () => {
+		test('Re-throws raw errors', async () => {
 			fetchMockRequestNetworkError()
 
 			const errorHandler = jest.fn(error => error)
@@ -285,7 +285,7 @@ describe('Echo', () => {
 			expect(errorHandler).toHaveBeenCalled()
 		})
 
-		test('Добавляет, удаляет и очищает перехватчики', async () => {
+		test('Adds, removes, and clears interceptors', async () => {
 			fetchMockResponseJsonSuccess()
 
 			const interceptor1 = jest.fn(config => {
@@ -298,22 +298,18 @@ describe('Echo', () => {
 				return config
 			})
 
-			// 1. Проверяем добавление
 			echo.interceptors.request.use('id1', interceptor1)
 			await echo.get('/test')
 			expect(interceptor1).toHaveBeenCalledTimes(1)
 
-			// 2. Проверяем удаление
 			echo.interceptors.request.eject('id1')
 			await echo.get('/test')
 			expect(interceptor1).toHaveBeenCalledTimes(1)
 
-			// 3. Проверяем добавление второго
 			echo.interceptors.request.use('id2', interceptor2)
 			await echo.get('/test')
 			expect(interceptor2).toHaveBeenCalledTimes(1)
 
-			// 4. Проверяем очистку
 			echo.interceptors.request.clear()
 			await echo.get('/test')
 			expect(interceptor1).toHaveBeenCalledTimes(1)
@@ -322,7 +318,7 @@ describe('Echo', () => {
 	})
 
 	describe('Response Interceptors', () => {
-		test('Модифицирует ответ', async () => {
+		test('Modifies the response', async () => {
 			fetchMockResponseJsonSuccess()
 
 			const responseHandler = jest.fn(response => {
@@ -338,7 +334,7 @@ describe('Echo', () => {
 			expect(response.data).toEqual({ ok: true, modified: true })
 		})
 
-		test('Выполнение цепочки перехватчиков', async () => {
+		test('Executing a chain of interceptors', async () => {
 			fetchMockResponseJsonSuccess()
 
 			const calls: string[] = []
@@ -365,7 +361,7 @@ describe('Echo', () => {
 			})
 		})
 
-		test('Перехватывает ошибки', async () => {
+		test('Intercepts errors', async () => {
 			fetchMockResponseJsonFailed()
 
 			const errorHandler = jest.fn(error => {
@@ -382,7 +378,7 @@ describe('Echo', () => {
 			expect(response.data).toBe('not-found-handled')
 		})
 
-		test('Перехватывает несколько ошибок', async () => {
+		test('Intercepts several errors', async () => {
 			fetchMockResponseJsonFailed()
 
 			const errorHandler1 = jest.fn(error => error)
@@ -402,7 +398,7 @@ describe('Echo', () => {
 			expect(response.data).toBe('not-found-handled')
 		})
 
-		test('Обрабатывает ошибки в цепочке fulfilled', async () => {
+		test('Handles errors in the fulfilled chain', async () => {
 			const errorHandler = jest.fn(error => {
 				expect(error).toBeInstanceOf(Error)
 				return { data: 'handled', status: 200 }
@@ -423,7 +419,7 @@ describe('Echo', () => {
 			expect(response.status).toBe(200)
 		})
 
-		test('Повторно выбрасывает необработанные ошибки', async () => {
+		test('Re-throws raw errors', async () => {
 			fetchMockResponseJsonFailed()
 
 			const errorHandler = jest.fn(error => error)
@@ -434,7 +430,7 @@ describe('Echo', () => {
 			expect(errorHandler).toHaveBeenCalled()
 		})
 
-		test('Добавляет, удаляет и очищает перехватчики', async () => {
+		test('Adds, removes, and clears interceptors', async () => {
 			fetchMockResponseJsonSuccess()
 
 			const interceptor1 = jest.fn(response => {
@@ -447,22 +443,18 @@ describe('Echo', () => {
 				return response
 			})
 
-			// 1. Проверяем добавление
 			echo.interceptors.response.use('id1', interceptor1)
 			await echo.get('/test')
 			expect(interceptor1).toHaveBeenCalledTimes(1)
 
-			// 2. Проверяем удаление
 			echo.interceptors.response.eject('id1')
 			await echo.get('/test')
 			expect(interceptor1).toHaveBeenCalledTimes(1)
 
-			// 3. Проверяем добавление второго
 			echo.interceptors.response.use('id2', interceptor2)
 			await echo.get('/test')
 			expect(interceptor2).toHaveBeenCalledTimes(1)
 
-			// 4. Проверяем очистку
 			echo.interceptors.response.clear()
 			await echo.get('/test')
 			expect(interceptor1).toHaveBeenCalledTimes(1)
@@ -470,8 +462,8 @@ describe('Echo', () => {
 		})
 	})
 
-	describe('Управление перехватчиками', () => {
-		test('Удаление несуществующих перехватчиков не вызывает ошибки', () => {
+	describe('Interceptor management', () => {
+		test('Removing non-existent interceptors does not cause an error', () => {
 			expect(() => {
 				echo.interceptors.request.eject('non-existent-id')
 			}).not.toThrow()
@@ -481,7 +473,7 @@ describe('Echo', () => {
 			}).not.toThrow()
 		})
 
-		test('Повторное добавление перехватчика с тем же ключом заменяет старый', async () => {
+		test('Re-adding the interceptor with the same key replaces the old one', async () => {
 			fetchMockResponseJsonSuccess()
 
 			const firstInterceptor = jest.fn(config => {
@@ -509,7 +501,7 @@ describe('Echo', () => {
 			})
 		})
 
-		test('Независимость перехватчиков', async () => {
+		test('Independence of interceptors', async () => {
 			fetchMockResponseJsonSuccess()
 
 			const requestInterceptor = jest.fn()
@@ -525,7 +517,7 @@ describe('Echo', () => {
 			expect(responseInterceptor).toHaveBeenCalled()
 		})
 
-		test('Перехватчики сохраняются между запросами', async () => {
+		test('Interceptors persist between requests', async () => {
 			fetchMockResponseJsonSuccess()
 
 			const interceptor = jest.fn(config => {
@@ -550,11 +542,10 @@ describe('Echo', () => {
 		})
 	})
 
-	describe('Комбинированные сценарии', () => {
-		test('Авторизация с обновлением токена', async () => {
+	describe('Combined scenarios', () => {
+		test('Authorization with token renewal', async () => {
 			let token = 'expired-token'
 
-			// Request: добавляем токен
 			echo.interceptors.request.use('auth', config => {
 				config.headers = {
 					...config.headers,
@@ -563,7 +554,6 @@ describe('Echo', () => {
 				return config
 			})
 
-			// Response: обрабатываем 401 и обновляем токен
 			echo.interceptors.response.use('auth', null, async error => {
 				if (error instanceof EchoError && error.response?.status === 401) {
 					token = 'new-token'
@@ -572,11 +562,9 @@ describe('Echo', () => {
 				throw error
 			})
 
-			// Первый вызов: 401
 			fetchMock.mockResponseOnce(JSON.stringify({ error: 'Token expired' }), {
 				status: 401
 			})
-			// Второй вызов: успех
 			fetchMock.mockResponseOnce(JSON.stringify({ ok: true }), {
 				status: 200
 			})
@@ -586,7 +574,6 @@ describe('Echo', () => {
 			expect(response.status).toBe(200)
 			expect(fetchMock).toHaveBeenCalledTimes(2)
 
-			// Проверяем заголовки
 			const firstCall = fetchMock.mock.calls[0][1] as any
 			const secondCall = fetchMock.mock.calls[1][1] as any
 
@@ -596,7 +583,7 @@ describe('Echo', () => {
 	})
 
 	describe('Edge cases', () => {
-		test('Перехватчик выбрасывает не Error', async () => {
+		test('The interceptor throws a non-Error', async () => {
 			echo.interceptors.response.use('throw-non-error', () => {
 				throw 'string error'
 			})
@@ -606,7 +593,7 @@ describe('Echo', () => {
 			await expect(echo.get('/test')).rejects.toBe('string error')
 		})
 
-		test('Перехватчик возвращает не EchoResponse', async () => {
+		test('The interceptor does not return an EchoResponse', async () => {
 			echo.interceptors.response.use('weird', () => {
 				return { custom: 'data' } as any
 			})
@@ -618,7 +605,7 @@ describe('Echo', () => {
 			expect(response).toEqual({ custom: 'data' })
 		})
 
-		test('Перехватчики отдают ошибку', async () => {
+		test('Interceptors give an error', async () => {
 			const requestRejectInterceptor = jest.fn(() => {
 				return new SyntaxError('Reject request')
 			})

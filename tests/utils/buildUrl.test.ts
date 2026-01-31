@@ -1,8 +1,8 @@
 import { buildUrl } from '../../src/utils/buildUrl'
 
 describe('buildUrl', () => {
-	describe('Проверка сборки Path', () => {
-		test('Объединяет URL', () => {
+	describe('Checking the Path build', () => {
+		test('Combines URLs', () => {
 			const baseURL = 'https://example.com/api/'
 			const url = '/v1/resource'
 
@@ -13,7 +13,7 @@ describe('buildUrl', () => {
 			expect(result2).toBe('https://example.com/api/v1/resource')
 		})
 
-		test('Объединяет без baseURL', () => {
+		test('Merges without baseUrl', () => {
 			const url = '/api/v1/resource'
 
 			const result = buildUrl(undefined, url)
@@ -21,7 +21,7 @@ describe('buildUrl', () => {
 			expect(result).toBe('/api/v1/resource')
 		})
 
-		test('Объединяет с пустым baseURL', () => {
+		test('Merges with an empty baseUrl', () => {
 			const baseURL = ''
 			const url = '/api/v1/resource'
 
@@ -30,7 +30,7 @@ describe('buildUrl', () => {
 			expect(result).toBe('/api/v1/resource')
 		})
 
-		test('Объединяет с некорректными URL', () => {
+		test('Combines with incorrect URLs', () => {
 			const baseURL = 'https://example.com/api/'
 			const url = '/%%invalid-url/'
 
@@ -39,7 +39,7 @@ describe('buildUrl', () => {
 			expect(result).toBe('https://example.com/api/%%invalid-url')
 		})
 
-		test('Не удаляем параметры поиска из URL', () => {
+		test('We do not remove the search parameters from the URL', () => {
 			const baseURL = 'https://example.com/api'
 			const url = 'v1/resource?existing=1&search=test'
 
@@ -50,7 +50,7 @@ describe('buildUrl', () => {
 			)
 		})
 
-		test('Отдает полный абсолютный url', () => {
+		test('Returns the full absolute url', () => {
 			const baseURL = 'https://example.com/api'
 			const url = 'https://another-site.com/v1/resource?query=test'
 
@@ -60,7 +60,7 @@ describe('buildUrl', () => {
 		})
 	})
 
-	describe('Проверка сборки Params', () => {
+	describe('Checking the Params build', () => {
 		const url = 'http://example'
 
 		test('Конструировать параметры в string', () => {
@@ -71,7 +71,7 @@ describe('buildUrl', () => {
 			expect(result).toBe('http://example?search=test&test=10')
 		})
 
-		test('Обрабатывать массивы в параметрах', () => {
+		test('Process arrays in parameters', () => {
 			const params = { tags: ['foo', 'bar'] }
 
 			const result = buildUrl(undefined, url, params)
@@ -79,7 +79,7 @@ describe('buildUrl', () => {
 			expect(result).toBe('http://example?tags=foo&tags=bar')
 		})
 
-		test('Игнорировать undefined и null значения', () => {
+		test('Ignore undefined and null values', () => {
 			const params = {
 				search: 'test',
 				tag: undefined,
@@ -91,7 +91,7 @@ describe('buildUrl', () => {
 			expect(result).toBe('http://example?search=test')
 		})
 
-		test('Игнорировать пустые строки в массиве', () => {
+		test('Ignore empty rows in the array', () => {
 			const params = { tags: ['foo', '', 'bar'] }
 
 			const result = buildUrl(undefined, url, params)
@@ -99,7 +99,7 @@ describe('buildUrl', () => {
 			expect(result).toBe('http://example?tags=foo&tags=bar')
 		})
 
-		test('Игнорировать undefined, null и пустые строки в массиве', () => {
+		test('Ignore undefined, null, and empty strings in the array', () => {
 			const params = {
 				tags: ['foo', '', 'bar', undefined, null, 'baz']
 			}
@@ -109,13 +109,13 @@ describe('buildUrl', () => {
 			expect(result).toBe('http://example?tags=foo&tags=bar&tags=baz')
 		})
 
-		test('Возвращать изначальный url при отсутствии параметров', () => {
+		test('Return the original url if there are no parameters', () => {
 			const result = buildUrl(undefined, url)
 
 			expect(result).toBe('http://example')
 		})
 
-		test('Возвращать изначальный url при всех пустых значениях', () => {
+		test('Return the original url with all empty values', () => {
 			const params = {
 				search: '',
 				tags: [],
@@ -128,7 +128,7 @@ describe('buildUrl', () => {
 			expect(result).toBe('http://example')
 		})
 
-		test('Пропускает унаследованные свойства', () => {
+		test('Skips inherited properties', () => {
 			const parent = { inherited: 'value' }
 			const params = Object.create(parent)
 			params.own = 'ownValue'

@@ -1,7 +1,7 @@
 import { formattedBody } from '../../src/utils/formattedBody'
 
 describe('formattedBody', () => {
-	test('Обрабатывать FormData', () => {
+	test('Process FormData', () => {
 		const body = new FormData()
 		body.append('file', 'data')
 
@@ -10,7 +10,7 @@ describe('formattedBody', () => {
 		expect(result).toBeInstanceOf(FormData)
 	})
 
-	test('Обрабатывать string', () => {
+	test('Process string', () => {
 		const body = 'test body'
 
 		const result = formattedBody(body)
@@ -18,7 +18,7 @@ describe('formattedBody', () => {
 		expect(result).toBe('test body')
 	})
 
-	test('Обрабатывать number', () => {
+	test('Process the number', () => {
 		const body = 123
 
 		const result = formattedBody(body)
@@ -26,7 +26,7 @@ describe('formattedBody', () => {
 		expect(result).toBe('123')
 	})
 
-	test('Cериализовать объекты в JSON', () => {
+	test('Serialize objects in JSON', () => {
 		const body = { key: 'value' }
 
 		const result = formattedBody(body)
@@ -34,7 +34,7 @@ describe('formattedBody', () => {
 		expect(result).toBe('{"key":"value"}')
 	})
 
-	test('Возвращать undefined, если тело не задано', () => {
+	test('Return undefined if the body is not specified', () => {
 		const result = formattedBody(undefined)
 
 		expect(result).toBeUndefined()

@@ -24,9 +24,9 @@ const mockResponse: EchoResponse = {
 }
 
 describe('EchoError', () => {
-	it('должен создавать экземпляр EchoError с правильными свойствами', () => {
+	it('Must create an instance of EchoError with the correct properties', () => {
 		const error = new EchoError(
-			'Тестовая ошибка',
+			'Test error',
 			mockConfig,
 			mockRequest,
 			mockResponse
@@ -35,7 +35,7 @@ describe('EchoError', () => {
 		expect(error).toBeInstanceOf(EchoError)
 
 		expect(error.name).toBe('EchoError')
-		expect(error.message).toBe('Тестовая ошибка')
+		expect(error.message).toBe('Test error')
 		expect(error.config).toEqual(mockConfig)
 		expect(error.request).toEqual(mockRequest)
 		expect(error.response).toEqual(mockResponse)
@@ -43,9 +43,9 @@ describe('EchoError', () => {
 })
 
 describe('isEchoError', () => {
-	it('возвращать true для экземпляра EchoError', () => {
+	it('Return true for an instance of EchoError', () => {
 		const error = new EchoError(
-			'Тестовая ошибка',
+			'Test error',
 			mockConfig,
 			mockRequest,
 			mockResponse
@@ -54,20 +54,20 @@ describe('isEchoError', () => {
 		expect(isEchoError(error)).toBe(true)
 	})
 
-	it('возвращать true для объекта с именем "EchoError"', () => {
-		const error = { name: 'EchoError', message: 'Тестовая ошибка' }
+	it('Return true for an object named EchoError', () => {
+		const error = { name: 'EchoError', message: 'Test error' }
 
 		expect(isEchoError(error)).toBe(true)
 	})
 
-	it('возвращать false для объекта с другим именем', () => {
-		const error = { name: 'SomeOtherError', message: 'Тестовая ошибка' }
+	it('Return false for an object with a different name', () => {
+		const error = { name: 'SomeOtherError', message: 'Test error' }
 
 		expect(isEchoError(error)).toBe(false)
 	})
 
-	it('возвращать false для ошибки, не являющейся объектом', () => {
-		const error = 'Тестовая ошибка'
+	it('Return false for an error that is not an object', () => {
+		const error = 'Test error'
 
 		expect(isEchoError(error)).toBe(false)
 	})
