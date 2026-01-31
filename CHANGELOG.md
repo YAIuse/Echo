@@ -6,6 +6,22 @@ This changelog follows the principles of **Keep a Changelog** and adheres to **S
 
 ---
 
+## **[0.5.0](https://github.com/YAIuse/Echo/releases/tag/v0.5.0)** (2026-01-31)
+
+### Changed:
+
+- Refactor code and type
+- Updated `configurator` logic related to `request.body`.
+- Updated documentation:
+  - Adjusted BundleJS badge size output.
+- Improved existing tests and renamed to English.
+
+### Fixed:
+
+- Incorrect usage of `errorMessage` inside internal logic.
+
+---
+
 ## **[0.4.0](https://github.com/YAIuse/Echo/releases/tag/v0.4.0)** (2026-01-01)
 
 ### Changed:
