@@ -33,7 +33,7 @@ export class EchoMethods {
 
 export type EchoClientInstance = Omit<EchoClient, 'createConfig'>
 
-export class EchoClient extends EchoFetch {
+export class EchoClient extends EchoFetch implements EchoMethods {
 	constructor(protected readonly createConfig: EchoCreateConfig = {}) {
 		super()
 	}
@@ -44,7 +44,7 @@ export class EchoClient extends EchoFetch {
 
 		return await this.fetch<T>(config, request).catch(err => {
 			if (isEchoError(err)) throw err
-			throw new EchoError(errorMessage(err.message), config, request)
+			throw new EchoError(errorMessage(err), config, request)
 		})
 	}
 

@@ -30,15 +30,9 @@ export type EchoInterceptors = ValueOf<typeof EchoInterceptors>
 
 // ----Const
 
-export type EchoSearchParams = {
-	[key: string]:
-		| string
-		| number
-		| boolean
-		| null
-		| undefined
-		| Array<string | number | boolean | null | undefined>
-}
+type PrimitiveParam = string | number | boolean | null | undefined
+
+export type EchoSearchParams = Record<string, PrimitiveParam | PrimitiveParam[]>
 
 // ----Config
 
@@ -48,7 +42,7 @@ export type EchoConfig = Omit<RequestInit, 'method' | 'headers' | 'body'> & {
 	baseURL?: string
 	params?: EchoSearchParams
 	headers?: Record<string, string>
-	responseType?: EchoResponseType | null
+	responseType?: EchoResponseType
 	body?: any
 	duplex?: 'half' | 'full'
 }

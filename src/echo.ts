@@ -18,10 +18,10 @@ export class Echo extends EchoClient {
 		const requestINTS: EchoRequestInterceptors = new Map()
 		const responseINTS: EchoResponseInterceptors = new Map()
 
-		const runFulfilled = async <T>(
+		const runFulfilled = async <T extends EchoConfig | EchoResponse>(
 			type: EchoInterceptors,
 			input: T
-		): Promise<T> => {
+		) => {
 			const interceptors = type === 'request' ? requestINTS : responseINTS
 
 			for (const [_, { onFulfilled }] of interceptors) {
@@ -31,10 +31,7 @@ export class Echo extends EchoClient {
 			return input
 		}
 
-		const runRejected = async (
-			type: EchoInterceptors,
-			input: any
-		): Promise<any> => {
+		const runRejected = async (type: EchoInterceptors, input: EchoError) => {
 			const interceptors = type === 'request' ? requestINTS : responseINTS
 
 			let isHandled = false
@@ -59,36 +56,29 @@ export class Echo extends EchoClient {
 			configure: EchoConfig
 		): Promise<EchoResponse<T>> => {
 			const config = deepMerge(createConfig, configure)
-			const intsConfig = await runFulfilled<EchoConfig>(
-				'request',
-				config
-			).catch(async error => {
-				return await runRejected('request', error)
-			})
+
+			const intsConfig = await runFulfilled('request', config).catch(
+				async error => await runRejected('request', error)
+			)
 
 			const request = this.configurator(intsConfig)
 
 			const response = await this.fetch<T>(config, request).catch(async err => {
 				if (isEchoError(err)) return await runRejected('response', err)
-				const requestError = new EchoError(
-					errorMessage(err.message),
-					config,
-					request
+
+				return await runRejected(
+					'request',
+					new EchoError(errorMessage(err), config, request)
 				)
-				return await runRejected('request', requestError)
 			})
 
-			return await runFulfilled<EchoResponse<T>>('response', response).catch(
-				async error => {
-					return await runRejected('response', error)
-				}
+			return await runFulfilled('response', response).catch(
+				async error => await runRejected('response', error)
 			)
 		}
 
-		const methods = new EchoMethods(request)
-
 		return {
-			...methods,
+			...new EchoMethods(request),
 			interceptors: {
 				request: {
 					use: (
