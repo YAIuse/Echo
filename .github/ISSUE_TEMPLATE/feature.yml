@@ -1,4 +1,4 @@
-name: 'Feature request'
+name: 'Feature'
 description: 'Suggest an idea or feature.'
 
 labels: ['feature']
@@ -7,8 +7,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Use this form to propose a new feature or improvement.  
-        Please check existing issues first to avoid duplicates.
+        > Use this form to propose a new feature or improvement.  
+        > Please check existing issues first to avoid duplicates.
 
   - type: textarea
     id: description

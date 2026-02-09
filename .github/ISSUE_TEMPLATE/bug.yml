@@ -1,4 +1,4 @@
-name: 'Bug report'
+name: 'Bug'
 description: 'Report a reproducible bug.'
 
 labels: ['bug']
@@ -7,8 +7,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please use this form for reproducible bugs.  
-        If you unsure it’s a bug, consider using Discussions.
+        > Please use this form for reproducible bugs.  
+        > If you unsure it’s a bug, consider using Discussions.
 
   - type: textarea
     id: environment
