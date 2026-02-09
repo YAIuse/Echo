@@ -1,4 +1,5 @@
 name: 'Common Setup'
+description: 'Install Node, Bun and cache dependencies for CI'
 
 inputs:
   node-version:

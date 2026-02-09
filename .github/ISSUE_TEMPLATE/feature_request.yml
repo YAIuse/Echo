@@ -1,59 +1,37 @@
-name: '✨ Feature Request'
-description: Suggest an idea or feature.
+name: 'Feature request'
+description: 'Suggest an idea or feature.'
+
 labels: ['feature']
+
 body:
   - type: markdown
     attributes:
       value: |
-        > 📌 **Note:** Please start the title with `[feature]`.  
-        > For example: `[feature] Add timeout support for fetch requests`
-
-  - type: markdown
-    attributes:
-      value: 'Please read and follow the instructions before submitting an issue:'
-
-  - type: markdown
-    attributes:
-      value: |
-        - Read all our documentation, especially the [README](https://github.com/YAIuse/Echo/blob/main/README.md). It may contain information that helps you solve your issue.
-        - Ensure your issue isn't already [reported](https://github.com/YAIuse/Echo/issues?utf8=%E2%9C%93&q=is%3Aissue).
-        - If you aren't sure that the issue is caused by Echo or you just need help, please use [Stack Overflow](https://stackoverflow.com/questions) or [our discussions](https://github.com/YAIuse/Echo/discussions).
-        - Ensure it isn't already fixed in the latest Echo version.
-
-  - type: markdown
-    attributes:
-      value: '⚠️👆 Feel free to these instructions before submitting the issue 👆⚠️'
+        Use this form to propose a new feature or improvement.  
+        Please check existing issues first to avoid duplicates.
 
   - type: textarea
     id: description
     attributes:
-      label: 'Is your feature request related to a problem? Please describe.'
-      description: A clear and concise description of what the problem is.
-      placeholder: I'm always frustrated when [...]
+      label: 'What problem would this feature solve?'
+      description: Describe the use case or pain point.
+      placeholder: I'm always running into this issue when [...]
     validations:
       required: true
 
   - type: textarea
     id: solution
     attributes:
-      label: Describe the solution you'd like
-      description: A clear and concise description of what you want to happen.
+      label: 'Proposed solution'
+      description: Describe what you’d like Echo to do.
+      placeholder: It would be helpful if Echo could [...]
     validations:
-      required: false
-
-  - type: textarea
-    id: alternative
-    attributes:
-      label: Describe alternatives you've considered
-      description: A clear and concise description of any alternative solutions or features you've considered.
-    validations:
-      required: false
+      required: true
 
   - type: textarea
     id: additional-context
     attributes:
-      label: 'Additional context/Screenshots'
-      description: Add any other context or screenshots about the feature request here.
-      render: bash
+      label: 'Additional context'
+      description: Add any extra details.
     validations:
       required: false

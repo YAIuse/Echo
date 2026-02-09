@@ -1,40 +1,32 @@
-name: '📝 Documentation'
-description: Report an error or area that needs clarification.
+name: 'Documentation'
+description: 'Report missing, unclear, or incorrect documentation.'
+
 labels: ['documentation']
+
 body:
-  - type: markdown
-    attributes:
-      value: |
-        > 📌 **Note:** Please start the title with `[docs]`.  
-        > For example: `[docs] Error in interceptor examples`
-
-  - type: markdown
-    attributes:
-      value: 'If you found an area that needs clarification, feel free to open a PR or list the section/content that could be improved below'
-
-  - type: markdown
-    attributes:
-      value: '⚠️👆 Feel free to these instructions before submitting the issue 👆⚠️'
-
   - type: textarea
-    id: content
+    id: summary
     attributes:
-      label: 'Section/Content To Improve'
-      description: Quote or link to section
+      label: 'Summary'
+      description: Briefly describe what is missing, unclear, or incorrect.
+      placeholder: e.g. "Interceptor examples do not show how to handle async errors."
     validations:
       required: true
 
   - type: textarea
-    id: solution
+    id: location
     attributes:
-      label: 'Suggested Improvement'
-      description: Identify what is confusing or incorrect and what could make it better
+      label: 'Where is this?'
+      description: Link to the page or file, or specify the section.
+      placeholder: e.g. "README.md – Interceptors section" or a direct URL
     validations:
       required: true
 
   - type: textarea
-    id: files
+    id: suggestion
     attributes:
-      label: 'Relevant File(s)'
-      placeholder: e.g. README.md
-      render: bash
+      label: 'Suggested improvement (optional)'
+      description: If you have an idea for better wording or examples, add it here.
+      placeholder: You could change the example to...
+    validations:
+      required: false
