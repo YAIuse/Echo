@@ -554,28 +554,205 @@ describe('Echo', () => {
 				return config
 			})
 
-			echo.interceptors.response.use('auth', null, async error => {
-				if (error instanceof EchoError && error.response?.status === 401) {
+			echo.interceptors.response.use('auth', null, async reject => {
+				if (isEchoError(reject) && reject.response?.status === 401) {
 					token = 'new-token'
-					return echo.request(error.config)
+					return echo.request(reject.config)
 				}
-				throw error
+				throw reject
 			})
 
 			fetchMock.mockResponseOnce(JSON.stringify({ error: 'Token expired' }), {
-				status: 401
+				status: 401,
+				headers: { 'Content-Type': 'application/json' }
 			})
 			fetchMock.mockResponseOnce(JSON.stringify({ ok: true }), {
-				status: 200
+				status: 200,
+				headers: { 'Content-Type': 'application/json' }
 			})
 
 			const response = await echo.get('/protected')
 
 			expect(response.status).toBe(200)
+			expect(response.data).toEqual({ ok: true })
 			expect(fetchMock).toHaveBeenCalledTimes(2)
 
-			const firstCall = fetchMock.mock.calls[0][1] as any
-			const secondCall = fetchMock.mock.calls[1][1] as any
+			const firstCall = fetchMock.mock.calls[0]?.[1] as any
+			const secondCall = fetchMock.mock.calls[1]?.[1] as any
+
+			expect(firstCall.headers.Authorization).toBe('Bearer expired-token')
+			expect(secondCall.headers.Authorization).toBe('Bearer new-token')
+		})
+
+		test('Does not loop when retry also returns 401', async () => {
+			type OriginConfig = Parameters<typeof echo.request>[0] & {
+				_isRetry?: boolean
+			}
+
+			let refreshCalled = 0
+			let token = 'expired-token'
+
+			const refresh = async () => {
+				refreshCalled++
+				token = 'new-token'
+			}
+
+			echo.interceptors.request.use('auth', config => {
+				config.headers = {
+					...config.headers,
+					Authorization: `Bearer ${token}`
+				}
+				return config
+			})
+
+			echo.interceptors.response.use('auth', null, async reject => {
+				if (isEchoError(reject)) {
+					const originConfig = reject.config as OriginConfig
+					const status401 = reject.response?.status === 401
+					const validRequest = !originConfig._isRetry && status401
+
+					if (!validRequest) throw reject // ← бросаем, не возвращаем
+					originConfig._isRetry = true
+
+					if (reject.message === 'Jwt expired') {
+						await refresh()
+						return await echo.request(originConfig)
+					}
+				}
+				return reject
+			})
+
+			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Jwt expired' }), {
+				status: 401,
+				headers: { 'Content-Type': 'application/json' }
+			})
+			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Jwt expired' }), {
+				status: 401,
+				headers: { 'Content-Type': 'application/json' }
+			})
+
+			await expect(echo.get('/protected')).rejects.toMatchObject({
+				message: 'Jwt expired'
+			})
+
+			// Ровно 2 вызова — цикла нет
+			expect(fetchMock).toHaveBeenCalledTimes(2)
+			// refresh только на первый 401
+			expect(refreshCalled).toBe(1)
+
+			const firstCall = fetchMock.mock.calls[0]?.[1] as any
+			const secondCall = fetchMock.mock.calls[1]?.[1] as any
+
+			expect(firstCall.headers.Authorization).toBe('Bearer expired-token')
+			expect(secondCall.headers.Authorization).toBe('Bearer new-token')
+		})
+
+		test('Does not retry when refresh itself fails', async () => {
+			type OriginConfig = Parameters<typeof echo.request>[0] & {
+				_isRetry?: boolean
+			}
+
+			let loggedOut = false
+
+			const refresh = async () => {
+				throw new Error('Refresh failed')
+			}
+
+			echo.interceptors.response.use('auth-fail', null, async reject => {
+				if (isEchoError(reject)) {
+					const originConfig = reject.config as OriginConfig
+					const validRequest =
+						!originConfig._isRetry && reject.response?.status === 401
+
+					if (!validRequest) throw reject
+					originConfig._isRetry = true
+
+					if (reject.message === 'Jwt expired') {
+						try {
+							await refresh()
+							return await echo.request(originConfig)
+						} catch {
+							loggedOut = true
+						}
+					}
+				}
+				return reject
+			})
+
+			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Jwt expired' }), {
+				status: 401,
+				headers: { 'Content-Type': 'application/json' }
+			})
+
+			await expect(echo.get('/protected')).rejects.toMatchObject({
+				message: 'Jwt expired'
+			})
+
+			// refresh упал → retry не случился
+			expect(fetchMock).toHaveBeenCalledTimes(1)
+			expect(loggedOut).toBe(true)
+		})
+
+		test('Returns data from retry after successful refresh', async () => {
+			type OriginConfig = Parameters<typeof echo.request>[0] & {
+				_isRetry?: boolean
+			}
+
+			let refreshCalled = 0
+			let token = 'expired-token'
+
+			const refresh = async () => {
+				refreshCalled++
+				token = 'new-token'
+			}
+
+			echo.interceptors.request.use('auth', config => {
+				config.headers = {
+					...config.headers,
+					Authorization: `Bearer ${token}`
+				}
+				return config
+			})
+
+			echo.interceptors.response.use('auth', null, async reject => {
+				if (isEchoError(reject)) {
+					const originConfig = reject.config as OriginConfig
+					const validRequest =
+						!originConfig._isRetry && reject.response?.status === 401
+
+					if (!validRequest) throw reject
+					originConfig._isRetry = true
+
+					if (reject.message === 'Jwt expired') {
+						await refresh()
+						return await echo.request(originConfig)
+					}
+				}
+				throw reject
+			})
+
+			fetchMock.mockResponseOnce(JSON.stringify({ message: 'Jwt expired' }), {
+				status: 401,
+				headers: { 'Content-Type': 'application/json' }
+			})
+			fetchMock.mockResponseOnce(
+				JSON.stringify({ user: 'admin', role: 'admin' }),
+				{
+					status: 200,
+					headers: { 'Content-Type': 'application/json' }
+				}
+			)
+
+			const response = await echo.get('/protected')
+
+			expect(fetchMock).toHaveBeenCalledTimes(2)
+			expect(response.status).toBe(200)
+			expect(response.data).toEqual({ user: 'admin', role: 'admin' }) // ← данные дошли
+
+			expect(refreshCalled).toBe(1)
+
+			const firstCall = fetchMock.mock.calls[0]?.[1] as any
+			const secondCall = fetchMock.mock.calls[1]?.[1] as any
 
 			expect(firstCall.headers.Authorization).toBe('Bearer expired-token')
 			expect(secondCall.headers.Authorization).toBe('Bearer new-token')

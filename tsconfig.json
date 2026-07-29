@@ -1,16 +1,26 @@
 {
 	"compilerOptions": {
-		"target": "ESNext",
-		"module": "ESNext",
+		"target": "esnext",
+		"module": "esnext",
 		"moduleResolution": "bundler",
+
 		"strict": true,
-		"noEmit": true,
+		"removeComments": true,
+		"isolatedModules": true,
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"resolveJsonModule": true,
-		"isolatedModules": true,
 		"skipLibCheck": true,
-		"verbatimModuleSyntax": true
+		"noUncheckedIndexedAccess": true,
+		"noUncheckedSideEffectImports": true,
+		"noFallthroughCasesInSwitch": true,
+		"useUnknownInCatchVariables": true,
+
+		"noEmit": true,
+		"verbatimModuleSyntax": true,
+
+		"rootDir": "./",
+		"types": ["node", "jest"]
 	},
 	"include": ["**/*.ts"],
 	"exclude": ["node_modules", "dist"]

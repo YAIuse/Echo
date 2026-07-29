@@ -106,7 +106,7 @@ describe('deepMerge', () => {
 
 		expect(result.a).toBe(target.a)
 		expect(result.e).toBe(target.e)
-		expect(result.e[0].g).toBe(target.e[0].g)
+		expect(result.e[0]?.g).toBe(target.e[0]?.g)
 		expect(result.e[0]).toBe(target.e[0])
 		expect(result.b).toBe(source.b)
 		expect(result.h).toBe(source.h)

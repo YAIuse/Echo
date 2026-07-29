@@ -9,15 +9,24 @@ export const fetchMockCheckRequest = (path?: string, object?: Object) =>
 export const fetchMockRequestNetworkError = () =>
 	fetchMock.mockRejectOnce(() => Promise.reject(new Error('Network Error')))
 
-const mockReqJson = (status: number) => ({
+const mockReqJson = (status: number, statusText = '') => ({
 	status,
-	headers: { 'Content-Type': 'application/json' }
+	statusText,
+	headers: {
+		'Content-Type': 'application/json'
+	}
 })
 
 export const fetchMockResponseJsonSuccess = () =>
-	fetchMock.mockResponseOnce(JSON.stringify({ ok: true }), mockReqJson(200))
+	fetchMock.mockResponseOnce(
+		JSON.stringify({ ok: true }),
+		mockReqJson(200, 'OK')
+	)
 
 export const fetchMockResponseJsonFailed = () =>
-	fetchMock.mockResponseOnce(JSON.stringify({ ok: false }), mockReqJson(404))
+	fetchMock.mockResponseOnce(
+		JSON.stringify({ ok: false }),
+		mockReqJson(404, 'Not Found')
+	)
 
 export { fetchMock }

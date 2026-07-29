@@ -12,7 +12,7 @@ import { formattedBody } from './utils/formattedBody'
 export class EchoFetch {
 	private parseByContentType = async (res: Response) => {
 		const contentTypeRaw = res.headers.get('content-type') ?? ''
-		const contentType = contentTypeRaw.split(';')[0].trim().toLowerCase()
+		const contentType = `${contentTypeRaw.split(';')[0]?.trim().toLowerCase()}`
 
 		if (res.status === 204 || res.headers.get('content-length') === '0') {
 			return null

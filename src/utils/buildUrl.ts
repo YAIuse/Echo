@@ -48,7 +48,7 @@ function buildParams(url: string, params?: EchoSearchParams): string {
 	}
 
 	const queryString = mergedParams.toString().replace(/\+/g, '%20')
-	return queryString ? `${path}?${queryString}` : path
+	return queryString ? `${path}?${queryString}` : `${path}`
 }
 
 export function buildUrl(

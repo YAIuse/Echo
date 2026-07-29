@@ -43,38 +43,33 @@
 	"devDependencies": {
 		"@trivago/prettier-plugin-sort-imports": "6.0.2",
 		"@types/jest": "^30.0.0",
-		"esbuild": "^0.27.2",
-		"jest": "^30.2.0",
-		"jest-fetch-mock": "^3.0.3",
-		"prettier": "3.8.1",
-		"rimraf": "^6.1.2",
-		"ts-jest": "^29.4.6",
-		"typescript": "^5.9.3"
+		"esbuild": "^0.28.1",
+		"jest": "^30.4.2",
+		"jest-fetch-mock": "^4.2.0",
+		"prettier": "3.9.6",
+		"rimraf": "^6.1.3",
+		"ts-jest": "^29.4.12",
+		"typescript": "^6.0.3"
 	},
 	"jest": {
-		"preset": "ts-jest/presets/default-esm",
-		"testEnvironment": "node",
 		"moduleFileExtensions": [
-			"ts",
-			"js"
+			"js",
+			"ts"
 		],
 		"testMatch": [
-			"**/?(*.)+(spec|test).ts"
+			"<rootDir>/tests/**/*.(spec|test).ts"
 		],
 		"transform": {
-			"^.+\\.ts$": [
-				"ts-jest",
-				{
-					"useESM": true
-				}
-			]
+			"^.+\\.(t|j)s$": "ts-jest"
 		},
-		"moduleNameMapper": {
-			"^src/(.*)$": "<rootDir>/src/$1"
-		},
-		"extensionsToTreatAsEsm": [
-			".ts"
-		]
+		"collectCoverageFrom": [
+			"src/**/*.(t|j)s",
+			"!**/*.(spec|test).ts",
+			"!**/*.d.ts",
+			"!**/*.index.(t|j)s"
+		],
+		"coverageDirectory": "coverage",
+		"testEnvironment": "node"
 	},
 	"keywords": [
 		"echo",

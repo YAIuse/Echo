@@ -84,8 +84,7 @@ export class Echo extends EchoClient {
 					use: (
 						key: string,
 						onFulfilled?:
-							| ((value: EchoConfig) => EchoConfig | Promise<EchoConfig>)
-							| null,
+							((value: EchoConfig) => EchoConfig | Promise<EchoConfig>) | null,
 						onRejected?: null | ((error: any) => any)
 					) => {
 						requestINTS.set(key, {

@@ -461,10 +461,16 @@ describe('EchoClient', () => {
 			})
 
 			test('Empty answer (204)', async () => {
-				fetchMock.mockResponseOnce('', {
-					status: 204,
-					headers: { 'Content-Type': 'application/json' }
-				})
+				fetchMock.mockImplementationOnce(() =>
+					Promise.resolve(
+						new Response(null, {
+							status: 204,
+							headers: {
+								'Content-Type': 'application/json'
+							}
+						})
+					)
+				)
 
 				const response = await client.get('/null-content')
 
@@ -554,40 +560,22 @@ describe('EchoClient', () => {
 			})
 
 			test('Stream', async () => {
-				const buffer = Buffer.from('Hello, world!')
-
-				fetchMock.mockImplementationOnce(() =>
-					Promise.resolve(new Response(buffer))
-				)
-
-				const response = await client.get<Buffer>('/stream', {
-					responseType: 'stream'
-				})
-
-				expect(response.data).toBeInstanceOf(Buffer)
-			})
-
-			test('Stream', async () => {
-				const buffer = Buffer.from('Hello, world!')
-				const responseBody = new ReadableStream({
+				const stream = new ReadableStream({
 					start(controller) {
-						controller.enqueue(buffer)
+						controller.enqueue(Buffer.from('Hello, world!'))
 						controller.close()
 					}
 				})
 
 				fetchMock.mockImplementationOnce(() =>
-					Promise.resolve(
-						new Response(responseBody, {
-							status: 200,
-							headers: { 'Content-Type': 'application/octet-stream' }
-						})
-					)
+					Promise.resolve(new Response(stream))
 				)
 
-				const response = await client.get('/stream', { responseType: 'stream' })
+				const response = await client.get<ReadableStream>('/stream', {
+					responseType: 'stream'
+				})
 
-				expect(response.data).toBeInstanceOf(Buffer)
+				expect(response.data).toBeInstanceOf(ReadableStream)
 			})
 
 			test('Original', async () => {

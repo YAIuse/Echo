@@ -280,20 +280,18 @@ echoAuth.interceptors.response.use(
 
 			// Check valid request
 			if (!validRequest) return reject
-
 			originRequest._isRetry = true
 
-			if (reject.message === 'Unauthorized') {
-				removeAccessToken()
-			} else if (reject.message === 'Jwt expired') {
+			if (reject.message === 'Jwt expired') {
 				try {
 					// Get new tokens
 					await tokenService.getNewTokens()
-					echoAuth.request(originRequest)
+					return await echoAuth.request(originRequest)
 				} catch {
 					removeAccessToken()
 				}
 			}
+			removeAccessToken()
 		}
 
 		// Return error if it is not handled
