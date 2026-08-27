@@ -6,11 +6,23 @@ This changelog follows the principles of **Keep a Changelog** and adheres to **S
 
 ---
 
+## **[0.6.1](https://github.com/YAIuse/Echo/releases/tag/v0.6.1)** (2026-08-27)
+
+### Changed:
+
+- Improved CI workflows:
+
+### Fixed:
+
+- Corrected package `exports` configuration.
+
+---
+
 ## **[0.6.0](https://github.com/YAIuse/Echo/releases/tag/v0.6.0)** (2026-07-30)
 
 ### Changed:
 
-- Update dependencies and typescript version 5 > 6.
+- Update dependencies and `typescript` version 5 > 6.
 - Improved tests.
 
 ## **[0.5.0](https://github.com/YAIuse/Echo/releases/tag/v0.5.0)** (2026-01-31)
