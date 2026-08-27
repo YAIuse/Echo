@@ -1,6 +1,7 @@
 *
-!dist/index.cjs.js
 !dist/**/*.d.ts
+!dist/**/*.d.сts
 !dist/**/*.js
+!dist/**/*.сjs
 !LICENSE
 !README.md
