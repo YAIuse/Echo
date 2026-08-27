@@ -6,6 +6,14 @@ This changelog follows the principles of **Keep a Changelog** and adheres to **S
 
 ---
 
+## **[0.6.2](https://github.com/YAIuse/Echo/releases/tag/v0.6.2)** (2026-08-27)
+
+### Fixed:
+
+- Replaced `.npmignore` with the `files` configuration in `package.json` to ensure only required package files are published.
+
+---
+
 ## **[0.6.1](https://github.com/YAIuse/Echo/releases/tag/v0.6.1)** (2026-08-27)
 
 ### Changed:
